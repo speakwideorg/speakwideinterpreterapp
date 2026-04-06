@@ -1,0 +1,183 @@
+import { Colors, Fonts } from "@app/themes";
+import { hexToRGB } from "@app/utils/helpers";
+import { isIos } from "@app/utils/helpers/Validation";
+import { normalize } from "@app/utils/orientation";
+import { Dimensions, StyleSheet } from "react-native";
+const { width } = Dimensions.get('screen');
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.ceramic,
+  },
+  topShape: {
+    height: normalize(340),
+    width,
+    position: 'absolute',
+    top: 0,
+  },
+  dashboardTitle: {
+    fontFamily: Fonts.Manrope_Regular,
+    color: Colors.night_blue,
+    fontSize: normalize(20),
+  },
+  boldText: {
+    fontFamily: Fonts.Manrope_Bold,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: normalize(15),
+    marginTop: normalize(10),
+  },
+  contentWrapper: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    marginTop: normalize(30),
+    borderTopLeftRadius: normalize(30),
+    borderTopRightRadius: normalize(30),
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  selectionContainer: {
+    backgroundColor: Colors.alabaster,
+    height: normalize(45),
+    width: '82%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderRadius: normalize(15),
+    alignSelf: 'center',
+    borderColor: Colors.blue_chalk,
+    borderWidth: normalize(1.5),
+    padding: normalize(3),
+    bottom: normalize(18),
+    shadowColor: hexToRGB(Colors.black, isIos() ? 0.4 : 0.3),
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: normalize(10),
+    elevation: 5,
+  },
+  selectionItem: {
+    backgroundColor: Colors.white,
+    width: '33.3%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: normalize(12),
+    shadowColor: hexToRGB(Colors.melrose, isIos() ? 0.4 : 1),
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: normalize(10),
+    elevation: 10,
+  },
+  deSelectionItem: {
+    width: '33.3%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectionTitle: {
+    fontFamily: Fonts.Inter_Medium,
+    color: Colors.purple,
+    fontSize: normalize(11),
+  },
+  deSelectionTitle: {
+    fontFamily: Fonts.Inter_Regular,
+    color: Colors.dark_grey,
+    fontSize: normalize(11),
+  },
+  listContent: {
+    paddingHorizontal: normalize(15),
+    paddingBottom: normalize(30),
+    paddingTop: normalize(5),
+  },
+  card: {
+    padding: normalize(15),
+    backgroundColor: Colors.white,
+    shadowColor: hexToRGB(Colors.black, isIos() ? 0.6 : 0.5),
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    borderRadius: normalize(10),
+    marginBottom: normalize(10),
+  },
+  rowCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontFamily: Fonts.Inter_Medium,
+    color: Colors.night_blue,
+    fontSize: normalize(13),
+  },
+  badge: {
+    backgroundColor: '#FFE0F0',
+    marginLeft: normalize(8),
+    paddingHorizontal: normalize(5),
+    paddingVertical: normalize(2),
+    borderRadius: normalize(4),
+  },
+  badgeText: {
+    fontFamily: Fonts.Inter_Medium,
+    color: Colors.night_blue,
+    fontSize: normalize(9),
+  },
+  clientPrefix: {
+    fontFamily: Fonts.Inter_Regular,
+  },
+  description: {
+    fontFamily: Fonts.Inter_Regular,
+    color: Colors.dark_grey,
+    fontSize: normalize(10),
+    marginTop: normalize(10),
+  },
+  dateBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF6ED',
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(6),
+    borderRadius: normalize(4),
+    alignSelf: 'flex-start',
+    marginTop: normalize(8),
+  },
+  dateLabel: {
+    fontFamily: Fonts.Inter_Regular,
+    color: '#9EA0A4',
+    fontSize: normalize(9),
+  },
+  dateText: {
+    fontFamily: Fonts.Inter_Medium,
+    color: Colors.night_blue,
+    fontSize: normalize(9),
+  },
+  statusTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: normalize(8),
+    paddingVertical: normalize(5),
+    borderRadius: normalize(30),
+    alignSelf: 'flex-start',
+    marginTop: normalize(10),
+    borderWidth: normalize(1),
+  },
+  statusIcon: {
+    height: normalize(11),
+    width: normalize(11),
+    marginRight: normalize(5),
+  },
+  statusText: {
+    fontFamily: Fonts.Inter_Regular,
+    fontSize: normalize(10),
+  },
+  buttonSection: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: normalize(10),
+  },
+});
