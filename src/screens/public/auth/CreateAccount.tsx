@@ -105,7 +105,7 @@ const CreateAccount = () => {
       setVisible(false);
       const payload = {
         full_name: info?.fullName?.trim(),
-        email: info?.email?.trim(),
+        email: info?.email?.trim().toLowerCase(),
         phone: `+${callingCode}${info?.phone}` || '',
         password: info?.password?.trim(),
         confirm_password: info?.confirm_password?.trim(),

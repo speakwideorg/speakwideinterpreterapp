@@ -63,7 +63,7 @@ const Login = () => {
       showMessage('Invalid password provided.');
     } else {
       const payload = {
-        user_name: info?.email?.trim(),
+        user_name: info?.email?.trim().toLowerCase(),
         password: info?.password?.trim(),
         deviceToken: device_token || _token,
         isRemember: info?.isRemember,
