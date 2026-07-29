@@ -41,7 +41,9 @@ const formatImage = (image: PickerImage): ImageCallback['path'] => {
   return {
     name: fileName,
     type: mime,
-    uri: Platform.OS === 'android' ? path : path.replace('file://', ''),
+    // Keep the file:// scheme on iOS — stripping it makes React Native's
+    // multipart upload send an empty file part, so images never actually save.
+    uri: Platform.OS === 'android' ? path : path.startsWith('file://') ? path : `file://${path}`,
   };
 };
 

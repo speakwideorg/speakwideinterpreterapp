@@ -22,6 +22,7 @@ const refreshTokenApiCall = async () => {
 
   if (!refreshToken) {
     Storage.clearAll();
+    store.dispatch(logoutRequest({}));
     return null;
   }
 
@@ -33,6 +34,10 @@ const refreshTokenApiCall = async () => {
       },
     );
 
+    // NOTE (backend to confirm): refresh endpoint response shape is assumed to be
+    // { token, refresh_token } at response.data — matching the signin response fields.
+    const newToken = response.data.token;
+
     store.dispatch(
       setTokenRefreshToken({
         token: response.data.token,
@@ -40,8 +45,9 @@ const refreshTokenApiCall = async () => {
       }),
     );
 
-    return response.data.accessToken;
+    return newToken;
   } catch (error: any) {
+    Storage.clearAll();
     store.dispatch(logoutRequest({}));
     throw error;
   }
@@ -79,27 +85,24 @@ instance.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-
-      if (error.response.status === 401) {
-        Storage.clearAll();
-        store.dispatch(logoutRequest({}));
-        return Promise.reject(error);
-      }
-
       try {
-        // Refresh the token
+        // Access token expired — silently refresh instead of logging out, so the
+        // interpreter stays signed in until they log out themselves.
         const newToken = await refreshTokenApiCall();
 
-        // Update the token in the headers
-        // instance.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-        // originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        // If refresh could not produce a new token, refreshTokenApiCall has already
+        // cleared storage and dispatched logout — just reject.
+        if (!newToken) {
+          return Promise.reject(error);
+        }
+
+        // Update the token in the headers and retry the original request
         instance.defaults.headers.common['x-access-token'] = newToken;
         originalRequest.headers['x-access-token'] = newToken;
 
-        // Retry the original request
         return instance(originalRequest);
       } catch (refreshError) {
-        // If the refresh fails, reset the auth state and reject the promise
+        // Refresh failed (invalid/expired refresh token) — logout already dispatched.
         return Promise.reject(refreshError);
       }
     }

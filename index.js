@@ -7,16 +7,23 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { STRIPE_PUBLISH_KEY, STRIPE_PUBLISH_KEY_LIVE } from '@env';
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
+import { handleBackgroundMessage } from './src/utils/helpers/NotificationService';
 
 LogBox.ignoreAllLogs();
+
+// Register the FCM background/quit handler at the entry point (required by RN Firebase)
+// so incoming session-request notifications fire even when the app is fully closed.
+setBackgroundMessageHandler(getMessaging(getApp()), handleBackgroundMessage);
 
 const createApp = () => (
   <Provider store={store}>
     <PersistGate loading={null} persistor={persistor}>
       <SafeAreaProvider>
         <StripeProvider
-          // publishableKey={STRIPE_PUBLISH_KEY}
-          publishableKey={STRIPE_PUBLISH_KEY_LIVE}
+          publishableKey={STRIPE_PUBLISH_KEY}
+          // publishableKey={STRIPE_PUBLISH_KEY_LIVE}
           merchantIdentifier="merchant.com.speakwide.app"
         >
           <App />

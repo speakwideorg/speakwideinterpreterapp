@@ -3,7 +3,6 @@
 import { Platform } from 'react-native';
 import {
   getMessaging,
-  setBackgroundMessageHandler,
   onMessage,
   onNotificationOpenedApp,
   getInitialNotification,
@@ -225,18 +224,27 @@ export const registerListenerWithFCM = (): (() => void) => {
       console.warn('[Notification] getInitialNotification error', err);
     });
 
-  // BACKGROUND MESSAGE HANDLER
-  setBackgroundMessageHandler(messagingInstance, async remoteMessage => {
-    const data = extractNotificationData(remoteMessage);
-    await displayNotification(data.title, data.body, data);
-    return Promise.resolve();
-  });
+  // NOTE: the BACKGROUND/QUIT message handler must be registered at the app entry
+  // point (index.js), outside the React tree — otherwise it won't run when the app
+  // is killed. See handleBackgroundMessage below, registered in index.js.
 
   const cleanup = () => {
     cleanupListeners();
   };
 
   return cleanup;
+};
+
+/***********************
+ * BACKGROUND / QUIT MESSAGE HANDLER
+ * Registered from index.js via setBackgroundMessageHandler so it fires even when
+ * the app is fully closed. Builds and shows the notification via notifee.
+ ************************/
+export const handleBackgroundMessage = async (
+  remoteMessage: RemoteMessage,
+): Promise<void> => {
+  const data = extractNotificationData(remoteMessage);
+  await displayNotification(data.title, data.body, data);
 };
 
 /***********************

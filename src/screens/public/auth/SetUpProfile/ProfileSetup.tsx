@@ -105,6 +105,13 @@ const ProfileSetup = () => {
   const [expertise, setExpertise] = useState<expertiseInterface[]>([]);
   const [languages, setLanguages] = useState<languageInterface[]>([]);
   const [isExit, setIsExit] = useState(false);
+  const [profileImageIsVisible, setProfileImageIsVisible] =
+    useState<boolean>(false);
+  const [profileImg, setProfileImg] = useState<{
+    uri: string;
+    name: string;
+    type: string;
+  }>({ name: '', type: '', uri: '' });
 
   useEffect(() => {
     switch (status) {
@@ -162,6 +169,9 @@ const ProfileSetup = () => {
       return;
     } else {
       const payload = new FormData();
+      if (profileImg.uri) {
+        payload.append('profile_image', profileImg as any);
+      }
       payload.append('ein', info.ein);
       payload.append('social_security_number', info.ssn);
       payload.append('address', info.street_address);
@@ -251,6 +261,24 @@ const ProfileSetup = () => {
             source={Images.backgroundHeader}
             style={styles.backgroundHeader}
           />
+
+          {/* Profile Photo */}
+          <View style={styles.profileImageContainer}>
+            <View style={styles.profileImageWrapper}>
+              <Image
+                source={profileImg.uri ? profileImg : Icons.icon_user}
+                style={styles.profileImage}
+                tintColor={profileImg.uri ? undefined : Colors.melrose}
+              />
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.profileImageEditContainer}
+              onPress={() => setProfileImageIsVisible(true)}
+            >
+              <Image source={Icons.edit} style={styles.profileImageEdit} />
+            </TouchableOpacity>
+          </View>
 
           {/* SSN */}
           <TextInput
@@ -879,6 +907,19 @@ const ProfileSetup = () => {
         }}
       />
 
+      <CustomImagePicker
+        visible={profileImageIsVisible}
+        onClose={() => setProfileImageIsVisible(false)}
+        onSelect={(img: { uri: string; name: string; type: string }) => {
+          setProfileImg({
+            name: img?.name || '',
+            type: img?.type || 'image/jpeg',
+            uri: img?.uri || '',
+          });
+          setProfileImageIsVisible(false);
+        }}
+      />
+
       {/* <CustomImagePicker
         visible={imageIsVisible}
         onClose={() => setImageIsVisible(false)}
@@ -1003,6 +1044,49 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     top: normalize(-12),
     position: 'absolute',
+  },
+  profileImageContainer: {
+    width: normalize(80),
+    height: normalize(80),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: normalize(20),
+  },
+  profileImageWrapper: {
+    width: normalize(80),
+    height: normalize(80),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: normalize(80),
+    overflow: 'hidden',
+    backgroundColor: Colors.white,
+    borderWidth: normalize(2),
+    borderColor: Colors.lilac,
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  profileImageEditContainer: {
+    width: normalize(22),
+    height: normalize(22),
+    backgroundColor: Colors.white,
+    borderRadius: normalize(22),
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.dark_grey,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    bottom: normalize(-3),
+    right: normalize(7),
+    elevation: 4,
+    position: 'absolute',
+  },
+  profileImageEdit: {
+    width: normalize(12),
+    height: normalize(12),
   },
   divider: {
     backgroundColor: '#E8E8E8',

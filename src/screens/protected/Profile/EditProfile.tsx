@@ -395,7 +395,10 @@ const ProfileSetup = () => {
       payload.append('social_security_number', info.ssn);
       payload.append('address', info.street_address);
 
-      if (profileImg.uri) {
+      // Only send profile_image when the user picked a NEW local file. When the
+      // photo is unchanged, profileImg.uri holds the existing S3 URL (http...),
+      // which is not a valid file part and would error/clear the image on save.
+      if (profileImg.uri && !profileImg.uri.startsWith('http')) {
         payload.append('profile_image', profileImg as any);
       }
 

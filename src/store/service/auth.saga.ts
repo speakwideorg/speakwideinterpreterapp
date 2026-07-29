@@ -63,6 +63,8 @@ function* handleSignIn(action: any) {
       action.payload,
     );
 
+    console.log("login success response==>", result?.data);
+
     if (result?.status === 200) {
       yield put(signInSuccess(result?.data));
 
@@ -97,6 +99,7 @@ function* handleSignIn(action: any) {
     }
     showMessage(result?.data?.message);
   } catch (error: any) {
+    console.log("login error response==>", error?.response?.data || error);
     yield put(signInFailure(error?.response?.data));
     showMessage(error?.response?.data?.message);
   }
