@@ -492,8 +492,8 @@ const ProfileSetup = () => {
                     : profileDetails?.profile_image === '' ||
                       profileDetails?.profile_image === null ||
                       profileDetails?.profile_image === undefined
-                    ? Icons.icon_user
-                    : {
+                      ? Icons.icon_user
+                      : {
                         uri:
                           IMAGES_BUCKET_URL.profile +
                           profileDetails?.profile_image,
@@ -502,8 +502,8 @@ const ProfileSetup = () => {
                 style={styles.profileImage}
                 tintColor={
                   profileDetails?.profile_image === '' ||
-                  profileDetails?.profile_image === null ||
-                  profileDetails?.profile_image === undefined
+                    profileDetails?.profile_image === null ||
+                    profileDetails?.profile_image === undefined
                     ? Colors.melrose
                     : undefined
                 }
@@ -741,14 +741,14 @@ const ProfileSetup = () => {
                               prev.map((val, i) =>
                                 i === index
                                   ? {
-                                      ...val,
-                                      expire_date: '',
-                                      image: {
-                                        name: '',
-                                        type: '',
-                                        uri: '',
-                                      },
-                                    }
+                                    ...val,
+                                    expire_date: '',
+                                    image: {
+                                      name: '',
+                                      type: '',
+                                      uri: '',
+                                    },
+                                  }
                                   : val,
                               ),
                             );
@@ -776,14 +776,14 @@ const ProfileSetup = () => {
                                 prev.map((itm, i) =>
                                   i === index
                                     ? {
-                                        ...itm,
-                                        expire_date: '',
-                                        image: {
-                                          name: files[0]?.path?.name || '',
-                                          uri: files[0]?.path?.uri || '',
-                                          type: files[0]?.path?.type,
-                                        },
-                                      }
+                                      ...itm,
+                                      expire_date: '',
+                                      image: {
+                                        name: files[0]?.path?.name || '',
+                                        uri: files[0]?.path?.uri || '',
+                                        type: files[0]?.path?.type,
+                                      },
+                                    }
                                     : itm,
                                 ),
                               );
@@ -835,9 +835,9 @@ const ProfileSetup = () => {
                         prev.map((val, i) =>
                           i === index
                             ? {
-                                ...val,
-                                expire_date: moment(date).format('YYYY-MM-DD'),
-                              }
+                              ...val,
+                              expire_date: moment(date).format('YYYY-MM-DD'),
+                            }
                             : val,
                         ),
                       );
@@ -867,14 +867,14 @@ const ProfileSetup = () => {
                       setCertificateList(prev =>
                         prev.length === 1
                           ? prev.map((val, i) =>
-                              i === index
-                                ? {
-                                    ...val,
-                                    expire_date: '',
-                                    image: { name: '', type: '', uri: '' },
-                                  }
-                                : val,
-                            )
+                            i === index
+                              ? {
+                                ...val,
+                                expire_date: '',
+                                image: { name: '', type: '', uri: '' },
+                              }
+                              : val,
+                          )
                           : prev.filter((_, i) => i !== index),
                       );
                     }}
@@ -949,10 +949,10 @@ const ProfileSetup = () => {
                               prev.map((val, i) =>
                                 i === index
                                   ? {
-                                      name: '',
-                                      type: '',
-                                      uri: '',
-                                    }
+                                    name: '',
+                                    type: '',
+                                    uri: '',
+                                  }
                                   : val,
                               ),
                             );
@@ -1015,10 +1015,10 @@ const ProfileSetup = () => {
                       setIdentificationList(prev =>
                         prev.length === 1
                           ? prev.map((val, i) =>
-                              i === index
-                                ? { name: '', type: '', uri: '' }
-                                : val,
-                            )
+                            i === index
+                              ? { name: '', type: '', uri: '' }
+                              : val,
+                          )
                           : prev.filter((_, i) => i !== index),
                       );
                     }}
@@ -1175,14 +1175,14 @@ const ProfileSetup = () => {
               prev.map((item, i) =>
                 i === imagePickerData.index
                   ? {
-                      ...item,
-                      expire_date: item.expire_date, // Keep existing expiry date
-                      image: {
-                        name: img?.name || '',
-                        type: img?.type || 'image/jpeg',
-                        uri: img?.uri || '',
-                      },
-                    }
+                    ...item,
+                    expire_date: item.expire_date, // Keep existing expiry date
+                    image: {
+                      name: img?.name || '',
+                      type: img?.type || 'image/jpeg',
+                      uri: img?.uri || '',
+                    },
+                  }
                   : item,
               ),
             );
@@ -1192,10 +1192,10 @@ const ProfileSetup = () => {
               prev.map((item, i) =>
                 i === imagePickerData.index
                   ? {
-                      name: img?.name || '',
-                      type: img?.type || 'image/jpeg',
-                      uri: img?.uri || '',
-                    }
+                    name: img?.name || '',
+                    type: img?.type || 'image/jpeg',
+                    uri: img?.uri || '',
+                  }
                   : item,
               ),
             );
@@ -1231,10 +1231,10 @@ const ProfileSetup = () => {
             prev.map((item, i) =>
               i === imagePickerData.index
                 ? {
-                    name: file?.name || '',
-                    uri: file?.uri || '',
-                    type: file?.type || 'image/jpeg',
-                  }
+                  name: file?.name || '',
+                  uri: file?.uri || '',
+                  type: file?.type || 'image/jpeg',
+                }
                 : item,
             ),
           );

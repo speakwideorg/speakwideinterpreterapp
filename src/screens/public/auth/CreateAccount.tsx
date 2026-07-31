@@ -13,6 +13,8 @@ import KeyboardAvoidingTemplate from '@app/components/template/KeyboardAvoidingT
 import { normalize } from '@app/utils/orientation';
 import { Colors, Fonts, Icons, Images } from '@app/themes';
 import TextInput from '@app/components/common/TextInput';
+import { CaptchaWebView } from '@app/components/common/CaptchaWebView';
+import { RECAPTCHA_SITE_KEY, BASE_URL_LIVE } from '@env';
 import Button from '@app/components/common/Button';
 import MyStatusBar from '@app/utils/helpers/MyStatusBar';
 import { navigate } from '@app/navigation/RootNaivgation';
@@ -65,6 +67,8 @@ const CreateAccount = () => {
   const [countryCode, setCountryCode] = useState<CountryCode>('US');
   const [callingCode, setCallingCode] = useState<string>('1');
   const [countryPickerVisible, setCountryPickerVisible] = useState(false);
+  const [showCaptcha, setShowCaptcha] = useState<boolean>(false);
+  const [pendingPayload, setPendingPayload] = useState<any>(null);
 
   const updateValue = (
     field: keyof CreaeAccountProps,
@@ -118,9 +122,26 @@ const CreateAccount = () => {
             ? 'Android'
             : 'Unknown',
       };
-      dispatch(createAccountRequest(payload));
+      console.log('[CreateAccount] Triggering Google reCAPTCHA verification:', {
+        siteKey: RECAPTCHA_SITE_KEY,
+        baseUrl: BASE_URL_LIVE,
+      });
+      setPendingPayload(payload);
+      setShowCaptcha(true);
     } else {
       showMessage('Please accept the Terms & Condition.');
+    }
+  };
+
+  const handleCaptchaSuccess = (captchaToken: string) => {
+    setShowCaptcha(false);
+    if (pendingPayload) {
+      const finalPayload = {
+        ...pendingPayload,
+        recaptchaToken: captchaToken,
+      };
+      dispatch(createAccountRequest(finalPayload));
+      setPendingPayload(null);
     }
   };
 
@@ -325,6 +346,19 @@ const CreateAccount = () => {
           />
         </ScrollView>
       </Picker>
+      {showCaptcha && (
+        <CaptchaWebView
+          siteKey={RECAPTCHA_SITE_KEY}
+          baseUrl={BASE_URL_LIVE}
+          onSuccess={handleCaptchaSuccess}
+          onError={err => {
+            setShowCaptcha(false);
+            setPendingPayload(null);
+            console.error('[CreateAccount] CaptchaWebView onError triggered:', err);
+            showMessage(err || 'CAPTCHA verification failed.');
+          }}
+        />
+      )}
     </KeyboardAvoidingTemplate>
   );
 };

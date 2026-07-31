@@ -1,4 +1,4 @@
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import moment from 'moment';
@@ -153,38 +153,81 @@ export const downloadFile = async ({
   fileName: string;
 }) => {
   try {
-    const extension = fileName?.split('.').pop()?.toLowerCase() || '';
+    console.log('[downloadFile] Called with:', { fileUrl, fileName });
+    if (!fileUrl || !fileName || typeof fileName !== 'string') {
+      showMessage('Invalid file information');
+      return;
+    }
+
+    const cleanFileName = fileName.trim();
+    if (!cleanFileName) {
+      showMessage('Invalid file name');
+      return;
+    }
+
+    const extension = cleanFileName.split('.').pop()?.toLowerCase() || '';
 
     if (BLOCKED_EXTENSIONS.includes(extension)) {
       showMessage('This file type is not supported');
       return;
     }
 
+    const encodedUrl = encodeURI(fileUrl);
     const timestamp = moment().format('HH_mm_ss_');
+    const safeFileName = cleanFileName.replace(/[^a-zA-Z0-9.-]/g, '_');
 
     const downloadPath =
       Platform.OS === 'android'
-        ? `${RNFS.DownloadDirectoryPath}/${timestamp}${fileName}`
-        : `${RNFS.DocumentDirectoryPath}/${timestamp}${fileName}`;
+        ? `${RNFS.DownloadDirectoryPath}/${timestamp}${safeFileName}`
+        : `${RNFS.DocumentDirectoryPath}/${timestamp}${safeFileName}`;
+
+    console.log('[downloadFile] Starting download from:', encodedUrl, 'to:', downloadPath);
 
     const result = await RNFS.downloadFile({
-      fromUrl: fileUrl,
+      fromUrl: encodedUrl,
       toFile: downloadPath,
-      background: true,
+      background: false,
+      discretionary: false,
     }).promise;
 
-    if (result.statusCode === 200) {
+    console.log('[downloadFile] Download statusCode:', result?.statusCode);
+
+    if (result && result.statusCode === 200) {
       if (Platform.OS === 'ios') {
-        await shareFileiOS(downloadPath, fileName);
+        await shareFileiOS(downloadPath, cleanFileName);
       } else {
-        showMessage('File downloaded successfully');
+        try {
+          await Share.open({
+            url: `file://${downloadPath}`,
+            type: getMimeType(cleanFileName),
+            filename: cleanFileName,
+          });
+        } catch (shareErr: any) {
+          console.log('[downloadFile] Android share dismissed/error:', shareErr);
+          if (!shareErr?.message?.includes('User did not share') && !shareErr?.message?.includes('CANCELLED')) {
+            showMessage('File downloaded successfully');
+          }
+        }
       }
     } else {
-      showMessage('Unable to download file');
+      console.log('[downloadFile] Fallback to Linking.openURL due to non-200 statusCode:', result?.statusCode);
+      await Linking.openURL(encodedUrl).catch(err => {
+        console.error('[downloadFile] Linking openURL failed:', err);
+        showMessage('Unable to download file');
+      });
     }
   } catch (error) {
     console.error('Download Error:', error);
-    showMessage('Unable to download file');
+    try {
+      if (fileUrl) {
+        await Linking.openURL(encodeURI(fileUrl));
+      } else {
+        showMessage('Unable to download file');
+      }
+    } catch (linkErr) {
+      console.error('Linking Fallback Error:', linkErr);
+      showMessage('Unable to download file');
+    }
   }
 };
 
@@ -203,11 +246,15 @@ const shareFileiOS = async (filePath: string, fileName: string) => {
 
     showMessage('File saved successfully');
   } catch (error: any) {
-    if (error?.message?.includes('User did not share')) {
-      showMessage('File saved in app storage');
-    } else {
-      showMessage('File downloaded');
+    console.log('[shareFileiOS] Error / User Cancelled:', error);
+    if (
+      error?.message?.includes('User did not share') ||
+      error?.message?.includes('CANCELLED') ||
+      error?.message?.includes('dismiss')
+    ) {
+      return;
     }
+    showMessage('File downloaded');
   }
 };
 

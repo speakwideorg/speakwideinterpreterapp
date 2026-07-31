@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "725578384157",
-    "project_id": "speakwide-b8cde",
-    "storage_bucket": "speakwide-b8cde.firebasestorage.app"
+    "project_number": "465095096232",
+    "project_id": "speakwide-23158",
+    "storage_bucket": "speakwide-23158.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:725578384157:android:c77b23f74bb62a6cd217f4",
+        "mobilesdk_app_id": "1:465095096232:android:0b6e035c96154b426d0f9d",
         "android_client_info": {
           "package_name": "com.speakwideinterpreter"
         }
@@ -15,26 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCQsdrKhrH6MNF2oiT2mzjdgz6uvmB8o3Q"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:725578384157:android:0d4e7fb928617e4dd217f4",
-        "android_client_info": {
-          "package_name": "com.speakwideuser"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCQsdrKhrH6MNF2oiT2mzjdgz6uvmB8o3Q"
+          "current_key": "AIzaSyDYxKCq_gz8Mf5cHg9bR-L5f5iQIq8VEQY"
         }
       ],
       "services": {

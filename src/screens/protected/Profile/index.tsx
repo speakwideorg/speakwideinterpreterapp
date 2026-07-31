@@ -250,95 +250,82 @@ const Profile = () => {
 
           <Text style={styles.sectionTitle}>CERTIFICATES / DOCUMENTS</Text>
           <View style={[styles.card]}>
-            {profileDetails?.certificate_documents?.map((item: any, i) => (
-              <View key={i} style={styles.fileCard}>
-                <View style={[Css.fdr, Css.aic]}>
-                  <Image
-                    source={Icons.picture_as_pdf}
-                    style={{
-                      height: normalize(20),
-                      width: normalize(20),
-                    }}
-                  />
-                  <Text style={styles.fileName}>{item.document}</Text>
+            {profileDetails?.certificate_documents?.map((item: any, i) => {
+              const docName = typeof item === 'string' ? item : item?.document || item?.name || '';
+              if (!docName) return null;
+              return (
+                <View key={i} style={styles.fileCard}>
+                  <View style={[Css.fdr, Css.aic]}>
+                    <Image
+                      source={Icons.picture_as_pdf}
+                      style={{
+                        height: normalize(20),
+                        width: normalize(20),
+                      }}
+                    />
+                    <Text style={styles.fileName}>{docName}</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() =>
+                      downloadFile({
+                        fileUrl: `${IMAGES_BUCKET_URL.certificates}${docName}`,
+                        fileName: docName,
+                      })
+                    }
+                  >
+                    <Image
+                      source={Icons.file_save}
+                      style={{
+                        height: normalize(20),
+                        width: normalize(20),
+                      }}
+                    />
+                  </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    // downloadFile(
-                    //   `${IMAGES_BUCKET_URL.certificates}${item.document}`,
-                    //   item.document,
-                    // )
-                    // DownloadImage(
-                    //   `${IMAGES_BUCKET_URL.certificates}${item.document}`,
-                    //   item.document,
-                    // )
-
-                    downloadFile({
-                      fileUrl: `${IMAGES_BUCKET_URL.certificates}${item.document}`,
-                      fileName: item.document,
-                    })
-                  }
-                >
-                  <Image
-                    source={Icons.file_save}
-                    style={{
-                      height: normalize(20),
-                      width: normalize(20),
-                    }}
-                  />
-                </TouchableOpacity>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           <Text style={styles.sectionTitle}>
             Driver License / Identification Card
           </Text>
           <View style={[styles.card]}>
-            {profileDetails?.identity_proofs?.map((item: any, i) => (
-              <View key={i} style={styles.fileCard}>
-                <View style={[Css.fdr, Css.aic]}>
-                  <Image
-                    source={Icons.photo_library}
-                    style={{
-                      height: normalize(20),
-                      width: normalize(20),
-                    }}
-                  />
-                  <Text style={styles.fileName}>{item}</Text>
-                </View>
+            {profileDetails?.identity_proofs?.map((item: any, i) => {
+              const docName = typeof item === 'string' ? item : item?.document || item?.uri || item?.name || '';
+              if (!docName) return null;
+              return (
+                <View key={i} style={styles.fileCard}>
+                  <View style={[Css.fdr, Css.aic]}>
+                    <Image
+                      source={Icons.photo_library}
+                      style={{
+                        height: normalize(20),
+                        width: normalize(20),
+                      }}
+                    />
+                    <Text style={styles.fileName}>{docName}</Text>
+                  </View>
 
-                <TouchableOpacity
-                  onPress={() =>
-                    // downloadFile(
-                    //   `${IMAGES_BUCKET_URL.identitities}${item}`,
-                    //   item,
-                    // )
-                    // DownloadImage(
-                    //   `${IMAGES_BUCKET_URL.identitities}${item}`,
-                    //   item,
-                    // )
-                    // SaveToGallery(
-                    //   `${IMAGES_BUCKET_URL.identitities}${item}`,
-                    //   item,
-                    // )
-                    downloadFile({
-                      fileUrl: `${IMAGES_BUCKET_URL.identitities}${item}`,
-                      fileName: item,
-                    })
-                  }
-                >
-                  <Image
-                    source={Icons.file_save}
-                    style={{
-                      height: normalize(20),
-                      width: normalize(20),
-                    }}
-                  />
-                </TouchableOpacity>
-              </View>
-            ))}
+                  <TouchableOpacity
+                    onPress={() =>
+                      downloadFile({
+                        fileUrl: `${IMAGES_BUCKET_URL.identitities}${docName}`,
+                        fileName: docName,
+                      })
+                    }
+                  >
+                    <Image
+                      source={Icons.file_save}
+                      style={{
+                        height: normalize(20),
+                        width: normalize(20),
+                      }}
+                    />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
 
           <Text style={styles.sectionTitle}>w9 Form</Text>

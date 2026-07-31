@@ -61,6 +61,13 @@ export const getImageFromGallery = async ({
       cropping: isCrop,
       mediaType: 'photo',
       cropperCircleOverlay: cropperCircleOverlay,
+      cropperStatusBarColor: '#000000',
+      cropperToolbarColor: '#FFFFFF',
+      cropperToolbarWidgetColor: '#1E1F28',
+      cropperActiveWidgetColor: '#3470E6',
+      cropperToolbarTitle: 'Edit Photo',
+      compressImageQuality: 0.8,
+      forceJpg: true,
     });
 
     callback({
@@ -90,6 +97,13 @@ export const getImageFromCamera = async ({
       cropping: isCrop,
       mediaType: 'photo',
       cropperCircleOverlay: cropperCircleOverlay,
+      cropperStatusBarColor: '#000000',
+      cropperToolbarColor: '#FFFFFF',
+      cropperToolbarWidgetColor: '#1E1F28',
+      cropperActiveWidgetColor: '#3470E6',
+      cropperToolbarTitle: 'Edit Photo',
+      compressImageQuality: 0.8,
+      forceJpg: true,
     });
 
     callback({

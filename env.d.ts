@@ -12,4 +12,5 @@ declare module '@env' {
   export const STRIPE_PUBLISH_KEY_LIVE: string;
   export const STRIPE_SECRET_KEY_LIVE: string;
   export const PERSONA_KEY_LIVE: string;
+  export const RECAPTCHA_SITE_KEY: string;
 }

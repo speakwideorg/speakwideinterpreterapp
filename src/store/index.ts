@@ -7,7 +7,16 @@ import notificationReducer from './slice/Notification.slice';
 import PaymentReducer from './slice/payment.slice';
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import { persistStore, persistReducer } from 'redux-persist';
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from 'redux-persist';
 import Storage from '@app/utils/storage';
 import { logger } from 'redux-logger';
 import rootSaga from './service/rootSaga';
@@ -47,7 +56,7 @@ const store = configureStore({
     getDefaultMiddleware({
       thunk: false,
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         ignoredPaths: ['register', 'rehydrate'],
       },
     }).concat(logger, sagaMiddleware),

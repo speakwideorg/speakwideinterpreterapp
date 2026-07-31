@@ -18,11 +18,10 @@ export const instance = axios.create({
 const refreshTokenApiCall = async () => {
   const { auth } = API;
 
-  const { refreshToken } = store.getState().auth;
+  const { token, refreshToken } = store.getState().auth;
 
+  // If user is already logged out or has no refresh token, do not trigger redundant logouts
   if (!refreshToken) {
-    Storage.clearAll();
-    store.dispatch(logoutRequest({}));
     return null;
   }
 
@@ -34,8 +33,6 @@ const refreshTokenApiCall = async () => {
       },
     );
 
-    // NOTE (backend to confirm): refresh endpoint response shape is assumed to be
-    // { token, refresh_token } at response.data — matching the signin response fields.
     const newToken = response.data.token;
 
     store.dispatch(
@@ -47,8 +44,11 @@ const refreshTokenApiCall = async () => {
 
     return newToken;
   } catch (error: any) {
-    Storage.clearAll();
-    store.dispatch(logoutRequest({}));
+    // Only dispatch logout if user was currently logged in
+    if (token || refreshToken) {
+      Storage.clearAll();
+      store.dispatch(logoutRequest({}));
+    }
     throw error;
   }
 };
@@ -74,14 +74,20 @@ instance.interceptors.request.use(async config => {
 instance.interceptors.response.use(
   response => response,
   async error => {
-    console.log("error.config===>", error.response, error.config, error);
     const originalRequest = error.config;
+
+    // Do NOT attempt token refresh for auth endpoints (signin, signup, logout)
+    const isAuthEndpoint =
+      originalRequest?.url?.includes(API.auth.signin) ||
+      originalRequest?.url?.includes(API.auth.create_account) ||
+      originalRequest?.url?.includes(API.auth.logout);
 
     // Check if the error is due to an expired token and the request hasn't already been retried
     if (
       error.response &&
       error.response.status === 401 &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !isAuthEndpoint
     ) {
       originalRequest._retry = true;
 
@@ -90,8 +96,7 @@ instance.interceptors.response.use(
         // interpreter stays signed in until they log out themselves.
         const newToken = await refreshTokenApiCall();
 
-        // If refresh could not produce a new token, refreshTokenApiCall has already
-        // cleared storage and dispatched logout — just reject.
+        // If refresh could not produce a new token, reject original request.
         if (!newToken) {
           return Promise.reject(error);
         }
@@ -102,7 +107,6 @@ instance.interceptors.response.use(
 
         return instance(originalRequest);
       } catch (refreshError) {
-        // Refresh failed (invalid/expired refresh token) — logout already dispatched.
         return Promise.reject(refreshError);
       }
     }

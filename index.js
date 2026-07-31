@@ -22,8 +22,8 @@ const createApp = () => (
     <PersistGate loading={null} persistor={persistor}>
       <SafeAreaProvider>
         <StripeProvider
-          publishableKey={STRIPE_PUBLISH_KEY}
-          // publishableKey={STRIPE_PUBLISH_KEY_LIVE}
+          // publishableKey={STRIPE_PUBLISH_KEY}
+          publishableKey={STRIPE_PUBLISH_KEY_LIVE}
           merchantIdentifier="merchant.com.speakwide.app"
         >
           <App />

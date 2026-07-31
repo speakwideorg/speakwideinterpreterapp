@@ -3,8 +3,8 @@ import { Images } from '@app/themes';
 import { ChatItem, DisputeStatus, SubscriptionPlan } from '@app/types';
 import { BASE_URL, BASE_URL_LIVE, CDN_URL } from '@env';
 
-const base_url = BASE_URL;
-// const base_url = BASE_URL_LIVE;
+// const base_url = BASE_URL;
+const base_url = BASE_URL_LIVE;
 // const base_url = 'http://192.168.5.212:1892';
 // const base_url = 'https://c48f48cace81.ngrok-free.app';
 

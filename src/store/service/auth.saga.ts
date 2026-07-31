@@ -63,7 +63,7 @@ function* handleSignIn(action: any) {
       action.payload,
     );
 
-    console.log("login success response==>", result?.data);
+
 
     if (result?.status === 200) {
       yield put(signInSuccess(result?.data));
@@ -99,7 +99,7 @@ function* handleSignIn(action: any) {
     }
     showMessage(result?.data?.message);
   } catch (error: any) {
-    console.log("login error response==>", error?.response?.data || error);
+    // console.log('❌ [LOGIN ERROR RESPONSE] ===>', error?.response?.data || error?.message || error);
     yield put(signInFailure(error?.response?.data));
     showMessage(error?.response?.data?.message);
   }
@@ -135,18 +135,16 @@ function* handleLogout() {
       instance.get,
       API.auth.logout,
     );
-
-    if (result?.status === 200) {
-      yield call([persistor, persistor.purge]);
-      yield put({ type: 'RESET_STORE' });
-      yield put(logoutSuccess({ data: {} }));
-    } else {
-      yield put(logoutFailure(result?.data));
+    if (result?.data?.message) {
+      showMessage(result.data.message);
     }
-    showMessage(result?.data?.message);
   } catch (error: any) {
-    showMessage(error?.response?.data?.message);
-    yield put(logoutFailure(error?.response?.data));
+    console.log('Logout API error (completing local logout):', error?.response?.data || error?.message || error);
+  } finally {
+    Storage.clearAll();
+    yield call([persistor, persistor.purge]);
+    yield put({ type: 'RESET_STORE' });
+    yield put(logoutSuccess({ data: {} }));
   }
 }
 
@@ -268,12 +266,15 @@ function* handleProfileDetails() {
       API.auth.userDetails,
     );
 
+
+
     if (result?.status === 200) {
       yield put(profileDetailsSuccess(result?.data));
     } else {
       yield put(profileDetailsFailure(result?.data));
     }
   } catch (error: any) {
+
     yield put(profileDetailsFailure(error?.response?.data));
   }
 }

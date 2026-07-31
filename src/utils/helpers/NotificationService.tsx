@@ -100,6 +100,7 @@ export const getFcmToken = async (): Promise<string | null> => {
 
     const token = await getToken(messagingInstance);
     if (token) {
+      // console.log('🔥 [FCM TOKEN] ===>', token);
       store.dispatch(setDeviceToken(token));
     }
     return token;
@@ -275,9 +276,9 @@ const displayNotification = async (
         smallIcon: 'ic_launcher',
         style: data.session_id // example conditional
           ? {
-              type: AndroidStyle.BIGPICTURE,
-              picture: data.session_id, // if you have imageUrl in data, use it instead
-            }
+            type: AndroidStyle.BIGPICTURE,
+            picture: data.session_id, // if you have imageUrl in data, use it instead
+          }
           : undefined,
         pressAction: { id: 'default' },
       },

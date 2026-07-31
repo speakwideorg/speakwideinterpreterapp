@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Increase uCrop toolbar height to create clearance below status bar notch -->
+    <dimen name="ucrop_height_toolbar">96dp</dimen>
+</resources>
