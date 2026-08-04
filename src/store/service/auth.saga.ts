@@ -57,6 +57,7 @@ function* handleCreateAccount(action: any) {
 
 function* handleSignIn(action: any) {
   try {
+    // console.log('🚀 [SIGNIN PAYLOAD TO BACKEND] ===>', JSON.stringify(action.payload, null, 2));
     const result: AxiosResponse<any> = yield call(
       instance.post,
       API.auth.signin,

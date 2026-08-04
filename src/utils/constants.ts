@@ -8,7 +8,7 @@ const base_url = BASE_URL_LIVE;
 // const base_url = 'http://192.168.5.212:1892';
 // const base_url = 'https://c48f48cace81.ngrok-free.app';
 
-console.log("base url==>", base_url)
+// console.log("base url==>", base_url)
 
 export const URL_LIST = {
   base_url: base_url,

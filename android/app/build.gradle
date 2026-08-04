@@ -28,8 +28,8 @@ android {
         applicationId "com.speakwideinterpreter"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 11
-        versionName "1.10"
+        versionCode 13
+        versionName "1.6"
     }
     signingConfigs {
         debug {
@@ -38,13 +38,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (project.hasProperty('SPEAKWIDE_RELEASE_STORE_FILE')) {
+                storeFile file(SPEAKWIDE_RELEASE_STORE_FILE)
+                storePassword SPEAKWIDE_RELEASE_STORE_PASSWORD
+                keyAlias SPEAKWIDE_RELEASE_KEY_ALIAS
+                keyPassword SPEAKWIDE_RELEASE_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

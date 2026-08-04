@@ -34,6 +34,7 @@ type ExtractedData = {
   session_id?: string;
   notification_id?: string;
   uid: string;
+  image_url?: string;
 };
 
 let cachedChannelId: string | null = null;
@@ -66,6 +67,7 @@ const extractNotificationData = (msg: RemoteMessage): ExtractedData => {
     session_id: raw.session_id,
     notification_id: raw._id || msg.messageId,
     uid,
+    image_url: raw.image_url || raw.picture || raw.imageUrl,
   };
 };
 
@@ -100,7 +102,7 @@ export const getFcmToken = async (): Promise<string | null> => {
 
     const token = await getToken(messagingInstance);
     if (token) {
-      // console.log('🔥 [FCM TOKEN] ===>', token);
+      console.log('🔥 [FCM DEVICE TOKEN] ===>', token);
       store.dispatch(setDeviceToken(token));
     }
     return token;
@@ -274,11 +276,11 @@ const displayNotification = async (
         channelId: cachedChannelId!,
         importance: AndroidImportance.HIGH,
         smallIcon: 'ic_launcher',
-        style: data.session_id // example conditional
+        style: data.image_url
           ? {
-            type: AndroidStyle.BIGPICTURE,
-            picture: data.session_id, // if you have imageUrl in data, use it instead
-          }
+              type: AndroidStyle.BIGPICTURE,
+              picture: data.image_url,
+            }
           : undefined,
         pressAction: { id: 'default' },
       },
