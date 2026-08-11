@@ -13,4 +13,13 @@ declare module '@env' {
   export const STRIPE_SECRET_KEY_LIVE: string;
   export const PERSONA_KEY_LIVE: string;
   export const RECAPTCHA_SITE_KEY: string;
+  export const FIREBASE_PROJECT_NUMBER: string;
+  export const FIREBASE_PROJECT_ID: string;
+  export const FIREBASE_STORAGE_BUCKET: string;
+  export const FIREBASE_ANDROID_APP_ID: string;
+  export const FIREBASE_ANDROID_API_KEY: string;
+  export const FIREBASE_ANDROID_PACKAGE_NAME: string;
+  export const FIREBASE_IOS_APP_ID: string;
+  export const FIREBASE_IOS_API_KEY: string;
+  export const FIREBASE_IOS_BUNDLE_ID: string;
 }

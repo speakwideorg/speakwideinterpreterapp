@@ -23,6 +23,7 @@ import moment from 'moment';
 import Css from '@app/themes/Css';
 import { downloadFile } from '@app/utils/helpers/FileActions';
 import { formatPhoneNumber } from '@app/utils/helpers';
+import { maskSSN, maskEIN } from '@app/utils/helpers/DataFormat';
 
 const { width } = Dimensions.get('screen');
 
@@ -35,8 +36,10 @@ interface ProfileData {
   gender: string;
   areas_of_expertise: Array<object>;
   languages: Array<object>;
-  social_security_number: string;
-  ein: string;
+  social_security_number?: string;
+  ssn_last4?: string;
+  ein?: string;
+  ein_last4?: string;
   objectives: string;
   identity_proofs: Array<object>;
   certificate_documents: Array<object>;
@@ -203,19 +206,20 @@ const Profile = () => {
               { gap: normalize(18), paddingVertical: normalize(13) },
             ]}
           >
+            {/* SSN and EIN are masked to the last 4 digits. Interpreters stay
+                permanently signed in to receive session notifications, so a full
+                SSN on screen is readable by anyone with the unlocked device. */}
             <LabeledRow
               icon={Icons.admin_panel_settings}
               label="Social Security Number"
-              value={
-                profileDetails?.social_security_number
-                  ? profileDetails?.social_security_number
-                  : 'N/A'
-              }
+              value={maskSSN(
+                profileDetails?.social_security_number || profileDetails?.ssn_last4,
+              )}
             />
             <LabeledRow
               icon={Icons.frame_person}
               label="EIN"
-              value={profileDetails?.ein ? profileDetails?.ein : 'N/A'}
+              value={maskEIN(profileDetails?.ein || profileDetails?.ein_last4)}
             />
             <LabeledRow
               icon={Icons.person_play}

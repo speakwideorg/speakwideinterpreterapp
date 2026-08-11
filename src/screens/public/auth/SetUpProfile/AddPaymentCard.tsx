@@ -29,10 +29,6 @@ import { useAppDispatch, useAppSelector } from '@app/store';
 import {
   CardField,
   CardFieldInput,
-  confirmPlatformPaySetupIntent,
-  isPlatformPaySupported,
-  PlatformPay,
-  PlatformPayButton,
   useStripe,
 } from '@stripe/stripe-react-native';
 import { showMessage } from '@app/utils/helpers/Toast';
@@ -84,9 +80,6 @@ const AddPaymentCard = () => {
   );
   const [isDisabled, setIsDisabled] = useState(false);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
-
-  const [isApplePaySupported, setIsApplePaySupported] = useState(false);
-  const [isGooglePaySupported, setIsGooglePaySupported] = useState(false);
 
   const updateValue = (field: keyof PaymentProps, value: boolean | string) => {
     setInfo(prevState => ({
@@ -163,81 +156,6 @@ const AddPaymentCard = () => {
       }
     } catch (error) {
       console.log('error in handle payemnt', error);
-    }
-  };
-
-  // Check for Platform Pay Support
-  useEffect(() => {
-    (async () => {
-      if (Platform.OS === 'ios') {
-        const apple = await isPlatformPaySupported();
-        setIsApplePaySupported(apple);
-      } else {
-        const google = await isPlatformPaySupported({
-          googlePay: { testEnv: false }, // Live setting
-        });
-        setIsGooglePaySupported(google);
-      }
-    })();
-  }, []);
-
-  const pay = async () => {
-    try {
-      console.log('payemnt method response ==>', paymentMethodResponse);
-      const clientSecret = paymentMethodResponse?.clientSecret;
-      if (!clientSecret) {
-        showMessage('Session expired. Please try again.');
-        return;
-      }
-
-      let result;
-
-      // FIX: Platform Specific Logic to avoid "must provide googlePay parameter"
-      if (Platform.OS === 'ios') {
-        result = await confirmPlatformPaySetupIntent(clientSecret, {
-          applePay: {
-            merchantCountryCode: 'US',
-            currencyCode: 'USD',
-            cartItems: [
-              {
-                label: 'Save Card to Account',
-                amount: '0.00',
-                paymentType: PlatformPay.PaymentType.Immediate,
-              },
-            ],
-          },
-        });
-      } else {
-        result = await confirmPlatformPaySetupIntent(clientSecret, {
-          googlePay: {
-            testEnv: false, // Live Mode
-            merchantName: 'SpeakWide',
-            merchantCountryCode: 'US',
-            currencyCode: 'USD',
-            billingAddressConfig: {
-              format: PlatformPay.BillingAddressFormat.Full,
-              isRequired: true,
-            },
-          },
-        });
-      }
-
-      if (result?.error) {
-        if (result.error.code !== 'Canceled') {
-          showMessage(result.error.message || 'Payment failed');
-        }
-        return;
-      }
-
-      // Handle successful result
-      const paymentMethodId = result?.setupIntent?.paymentMethodId;
-      if (paymentMethodId) {
-        await dispatch(addCardRequest({ paymentMethodId }));
-      }
-      dispatch(cardListRequest({}));
-    } catch (err) {
-      console.error('Platform Pay Exception:', err);
-      showMessage('An unexpected error occurred.');
     }
   };
 
@@ -387,22 +305,9 @@ const AddPaymentCard = () => {
               width={'100%'}
               angle={60}
               isLoading={isLoading}
-              // disabled={isDisabled}
+            // disabled={isDisabled}
             />
           </View>
-
-          <Text style={styles.orText}>OR</Text>
-
-          {((Platform.OS === 'ios' && isApplePaySupported) ||
-            (Platform.OS === 'android' && isGooglePaySupported)) && (
-            <PlatformPayButton
-              onPress={pay}
-              type={PlatformPay.ButtonType.Continue}
-              appearance={PlatformPay.ButtonStyle.Black}
-              borderRadius={14}
-              style={styles.payButton}
-            />
-          )}
 
           <TouchableOpacity
             style={styles.skipContainer}

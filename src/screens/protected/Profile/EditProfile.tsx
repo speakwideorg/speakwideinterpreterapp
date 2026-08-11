@@ -19,6 +19,16 @@ import Button from '@app/components/common/Button';
 import MyStatusBar from '@app/utils/helpers/MyStatusBar';
 import { goBack, navigate } from '@app/navigation/RootNaivgation';
 import { isIos, validEIN, validSSN } from '@app/utils/helpers/Validation';
+import {
+  maskSSN,
+  maskEIN,
+  unformatSSN,
+  unformatEIN,
+  isValidSSN,
+  isValidEIN,
+  formatSSN,
+  formatEIN,
+} from '@app/utils/helpers/DataFormat';
 import TextInput from '@app/components/common/TextInput';
 import Selection from '@app/components/common/Selection';
 import LanguagePicker, {
@@ -85,8 +95,10 @@ interface ProfileData {
   gender: string;
   areas_of_expertise: expertiseInterface[];
   languages: languageInterface[];
-  social_security_number: string;
-  ein: string;
+  social_security_number?: string;
+  ssn_last4?: string;
+  ein?: string;
+  ein_last4?: string;
   objectives: string;
   identity_proofs: IdentityProof[];
   certificate_documents: CertificateDocument[];
@@ -119,6 +131,9 @@ const ProfileSetup = () => {
   );
   const { status, isLoading } = useAppSelector(state => state.auth);
 
+  const [isSSNEdited, setIsSSNEdited] = useState(false);
+  const [isEINEdited, setIsEINEdited] = useState(false);
+
   // Initialize info state with proper fallbacks
   const [info, setInfo] = useState<ProfileSetupProps>({
     profile_image: null,
@@ -127,8 +142,8 @@ const ProfileSetup = () => {
     phone: profileDetails?.phone || '',
     logo: null,
     street_address: profileDetails?.address || '',
-    ssn: profileDetails?.social_security_number || '',
-    ein: profileDetails?.ein || '',
+    ssn: maskSSN(profileDetails?.social_security_number || profileDetails?.ssn_last4),
+    ein: maskEIN(profileDetails?.ein || profileDetails?.ein_last4),
     about_me: profileDetails?.objectives || '',
     preferred_gender: profileDetails?.gender || '',
     business_name: '',
@@ -177,28 +192,31 @@ const ProfileSetup = () => {
       profileDetails?.identity_proofs &&
       profileDetails?.identity_proofs?.length > 0
     ) {
-      return profileDetails?.identity_proofs?.map((proof, i) => ({
-        name: proof || '',
-        type: ['jpg', 'jpeg', 'png', 'gif'].includes(
-          proof?.split('.').pop()?.toLowerCase(),
-        )
-          ? 'image/jpeg'
-          : 'application/pdf',
-        uri: proof ? `${IMAGES_BUCKET_URL.identitities}${proof}` : '',
-        _id: i,
-      }));
+      return profileDetails?.identity_proofs?.map((proof: any, i: number) => {
+        const proofName =
+          typeof proof === 'string' ? proof : proof?.identity_proof || '';
+        const ext = proofName.split('.').pop()?.toLowerCase() || '';
+        return {
+          name: proofName,
+          type: ['jpg', 'jpeg', 'png', 'gif'].includes(ext)
+            ? 'image/jpeg'
+            : 'application/pdf',
+          uri: proofName ? `${IMAGES_BUCKET_URL.identitities}${proofName}` : '',
+          _id: String(i),
+        };
+      });
     }
     return [{ name: '', type: '', uri: '' }];
   };
 
   const initializeW9Form = (): { uri: string; name: string; type: string } => {
-    if (profileDetails?.w9Form) {
+    const w9 = profileDetails?.w9Form || '';
+    if (w9) {
+      const ext = w9.split('.').pop()?.toLowerCase() || '';
       return {
-        uri: `${IMAGES_BUCKET_URL.w9Form}${profileDetails?.w9Form}`,
-        name: profileDetails?.w9Form || '',
-        type: ['jpg', 'jpeg', 'png', 'gif'].includes(
-          profileDetails?.w9Form?.split('.')?.pop()?.toLowerCase(),
-        )
+        uri: `${IMAGES_BUCKET_URL.w9Form}${w9}`,
+        name: w9,
+        type: ['jpg', 'jpeg', 'png', 'gif'].includes(ext)
           ? 'image/jpeg'
           : 'application/pdf',
       };
@@ -245,8 +263,8 @@ const ProfileSetup = () => {
         phone: profileDetails?.phone || '',
         logo: null,
         street_address: profileDetails?.address || '',
-        ssn: profileDetails?.social_security_number || '',
-        ein: profileDetails?.ein || '',
+        ssn: maskSSN(profileDetails?.social_security_number || profileDetails?.ssn_last4),
+        ein: maskEIN(profileDetails?.ein || profileDetails?.ein_last4),
         about_me: profileDetails?.objectives || '',
         preferred_gender: profileDetails?.gender || '',
         business_name: '',
@@ -256,6 +274,8 @@ const ProfileSetup = () => {
       };
 
       setInfo(updatedInfo);
+      setIsSSNEdited(false);
+      setIsEINEdited(false);
       setExpertise(profileDetails?.areas_of_expertise || []);
       setLanguages(profileDetails?.languages || []);
     }
@@ -308,14 +328,16 @@ const ProfileSetup = () => {
   }, [status]);
 
   const getDeletedIdentityProofs = (
-    serverList: string[],
+    serverList: any[],
     currentList: any[],
   ) => {
     const currentNames = currentList
       .filter(item => item?.uri)
       .map(item => item.name);
 
-    return serverList.filter(name => !currentNames.includes(name));
+    return (serverList || [])
+      .map(item => (typeof item === 'string' ? item : item?.identity_proof || ''))
+      .filter(name => name && !currentNames.includes(name));
   };
 
   const getDeletedCertificates = (serverList: any[], currentList: any[]) => {
@@ -365,12 +387,27 @@ const ProfileSetup = () => {
       // showMessage('Phone Number is not valid');
     } else if (!info.preferred_gender) {
       showMessage('Gender is Required');
-    } else if (!info.ssn && !info.ein) {
-      showMessage('EIN or SSN is required.');
-    } else if (info.ssn && !validSSN(info.ssn)) {
+    } else if (
+      isSSNEdited &&
+      info.ssn &&
+      !isValidSSN(info.ssn)
+    ) {
       showMessage('Invalid SSN provided');
-    } else if (info.ein && !validEIN(info.ein)) {
+    } else if (
+      isEINEdited &&
+      info.ein &&
+      !isValidEIN(info.ein)
+    ) {
       showMessage('Invalid EIN provided');
+    } else if (
+      !profileDetails?.social_security_number &&
+      !profileDetails?.ssn_last4 &&
+      !profileDetails?.ein &&
+      !profileDetails?.ein_last4 &&
+      (!isSSNEdited || !isValidSSN(info.ssn)) &&
+      (!isEINEdited || !isValidEIN(info.ein))
+    ) {
+      showMessage('EIN or SSN is required.');
     } else if (expertise.length === 0) {
       showMessage('Please add expertise');
     } else if (languages.length === 0) {
@@ -391,8 +428,12 @@ const ProfileSetup = () => {
       payload.append('objectives', info.about_me);
       payload.append('phone', info.phone);
       payload.append('gender', info.preferred_gender);
-      payload.append('ein', info.ein);
-      payload.append('social_security_number', info.ssn);
+      if (isEINEdited && isValidEIN(info.ein)) {
+        payload.append('ein', unformatEIN(info.ein));
+      }
+      if (isSSNEdited && isValidSSN(info.ssn)) {
+        payload.append('social_security_number', unformatSSN(info.ssn));
+      }
       payload.append('address', info.street_address);
 
       // Only send profile_image when the user picked a NEW local file. When the
@@ -437,8 +478,6 @@ const ProfileSetup = () => {
       }
 
       console.log('certificate list==>', certificateList);
-
-      console.log('payload inupdate==>', payload);
 
       // dispatch(
       //   deleteDocumentRequest({
@@ -545,13 +584,59 @@ const ProfileSetup = () => {
           <TextInput
             title="Social Security Number"
             value={info.ssn}
-            onChangeText={txt => updateValue('ssn', txt)}
+            onChangeText={txt => {
+              setIsSSNEdited(true);
+              updateValue('ssn', txt);
+            }}
+            onFocus={() => {
+              if (!isSSNEdited) {
+                setIsSSNEdited(true);
+                updateValue('ssn', '');
+              }
+            }}
+            onBlur={() => {
+              if (
+                isSSNEdited &&
+                !info.ssn &&
+                (profileDetails?.social_security_number || profileDetails?.ssn_last4)
+              ) {
+                setIsSSNEdited(false);
+                updateValue(
+                  'ssn',
+                  maskSSN(
+                    profileDetails?.social_security_number || profileDetails?.ssn_last4,
+                  ),
+                );
+              }
+            }}
             placeholder="Enter SSN"
           />
           <TextInput
             title="EIN"
             value={info.ein}
-            onChangeText={txt => updateValue('ein', txt)}
+            onChangeText={txt => {
+              setIsEINEdited(true);
+              updateValue('ein', txt);
+            }}
+            onFocus={() => {
+              if (!isEINEdited) {
+                setIsEINEdited(true);
+                updateValue('ein', '');
+              }
+            }}
+            onBlur={() => {
+              if (
+                isEINEdited &&
+                !info.ein &&
+                (profileDetails?.ein || profileDetails?.ein_last4)
+              ) {
+                setIsEINEdited(false);
+                updateValue(
+                  'ein',
+                  maskEIN(profileDetails?.ein || profileDetails?.ein_last4),
+                );
+              }
+            }}
             placeholder="Enter EIN"
           />
 

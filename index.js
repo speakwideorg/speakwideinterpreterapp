@@ -24,7 +24,7 @@ const createApp = () => (
         <StripeProvider
           // publishableKey={STRIPE_PUBLISH_KEY}
           publishableKey={STRIPE_PUBLISH_KEY_LIVE}
-          merchantIdentifier="merchant.com.speakwide.app"
+        // merchantIdentifier="merchant.com.speakwide.app"
         >
           <App />
         </StripeProvider>

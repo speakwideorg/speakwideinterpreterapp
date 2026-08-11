@@ -8,6 +8,7 @@ import {
   getInitialNotification,
   requestPermission as firebaseRequestPermission,
   getToken,
+  onTokenRefresh,
   AuthorizationStatus,
 } from '@react-native-firebase/messaging';
 import { getApp } from '@react-native-firebase/app';
@@ -39,9 +40,11 @@ type ExtractedData = {
 
 let cachedChannelId: string | null = null;
 let isInitialized = false;
+
 let unsubscribeForeground: (() => void) | null = null;
-let unsubscribeBackground: (() => void) | null = null;
 let unsubscribeForegroundEvent: (() => void) | null = null;
+let unsubscribeBackground: (() => void) | null = null;
+let unsubscribeTokenRefresh: (() => void) | null = null;
 
 /***********************
  * UNIFIED DATA PARSER
@@ -72,18 +75,23 @@ const extractNotificationData = (msg: RemoteMessage): ExtractedData => {
 };
 
 /***********************
- * PERMISSION
+ * PERMISSIONS (FIREBASE & NOTIFEE)
  ************************/
 export const requestNotificationPermission = async (): Promise<boolean> => {
   try {
-    await notifee.requestPermission();
     const app = getApp();
     const messagingInstance = getMessaging(app);
 
-    const authStatus = await firebaseRequestPermission(messagingInstance);
+    const authStatus =
+      await firebaseRequestPermission(messagingInstance);
+
     const enabled =
       authStatus === AuthorizationStatus.AUTHORIZED ||
       authStatus === AuthorizationStatus.PROVISIONAL;
+
+    if (Platform.OS === 'ios') {
+      await notifee.requestPermission();
+    }
 
     return enabled;
   } catch (error) {
@@ -102,7 +110,10 @@ export const getFcmToken = async (): Promise<string | null> => {
 
     const token = await getToken(messagingInstance);
     if (token) {
+      console.log('====================================');
       console.log('🔥 [FCM DEVICE TOKEN] ===>', token);
+      console.log('FCM TOKEN:', token);
+      console.log('====================================');
       store.dispatch(setDeviceToken(token));
     }
     return token;
@@ -214,6 +225,17 @@ export const registerListenerWithFCM = (): (() => void) => {
       handleNotificationNavigation({ data, from: 'notification' });
     },
   );
+
+  // TOKEN REFRESH
+  unsubscribeTokenRefresh = onTokenRefresh(messagingInstance, token => {
+    console.log('====================================');
+    console.log('🔥 [FCM TOKEN REFRESHED] ===>', token);
+    console.log('FCM TOKEN:', token);
+    console.log('====================================');
+    if (token) {
+      store.dispatch(setDeviceToken(token));
+    }
+  });
 
   // INITIAL NOTIFICATION (app killed → opened via notification)
   getInitialNotification(messagingInstance)

@@ -1,6 +1,14 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+
+task generateFirebaseConfig(type: Exec) {
+    commandLine 'node', "${project.rootDir}/../scripts/generate-firebase-config.js"
+}
+tasks.matching { it.name.startsWith("process") && it.name.endsWith("GoogleServices") }.configureEach {
+    dependsOn generateFirebaseConfig
+}
+
 apply plugin: 'com.google.gms.google-services'
 
 react {
