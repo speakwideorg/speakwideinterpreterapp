@@ -37,6 +37,7 @@ import AlertModal from '@app/components/common/AlertModal';
 import CancelSessionContent from './components/CancelSessionContent';
 import { useIsFocused } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '@app/store';
+import { scheduleSessionReminders } from '@app/utils/helpers/NotificationService';
 import {
   acceptSessionRequest,
   declineRequestedSessionRequest,
@@ -96,11 +97,19 @@ const SessionViewList: FC<Props> = ({ route }) => {
         }
         case 'interpreterSession/getInterpreterListSuccess': {
           setIsLoading(false);
+          const docs = sessionSlice?.data?.docs || [];
           if (page === 1) {
-            setSessionData(sessionSlice?.data?.docs);
+            setSessionData(docs);
           } else {
-            setSessionData([...sessionData, ...sessionSlice?.data?.docs]);
+            setSessionData([...sessionData, ...docs]);
           }
+
+          if (type === 'Scheduled' && Array.isArray(docs)) {
+            docs.forEach((item: any) => {
+              scheduleSessionReminders(item);
+            });
+          }
+
           setAllItemsLoaded(
             sessionSlice?.data?.meta?.totalPages == page ||
               sessionSlice?.data?.meta?.totalPages == 0 ||

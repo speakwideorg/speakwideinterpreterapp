@@ -17,6 +17,8 @@ import notifee, {
   AndroidImportance,
   AndroidStyle,
   Notification as NotifeeNotification,
+  TriggerType,
+  TimestampTrigger,
 } from '@notifee/react-native';
 import { store } from '../../store/index';
 import { setDeviceToken } from '@app/store/slice/auth.slice';
@@ -162,6 +164,10 @@ export const handleNotificationNavigation = (msg: any) => {
     case 'scheduled_session_updated':
       _handleNavigate('ScheduledDetails');
       break;
+    case 'support_chat':
+    case 'support_message':
+      navigate('SupportChat');
+      break;
     default:
       navigate('Notifications');
       break;
@@ -184,6 +190,10 @@ const cleanupListeners = () => {
     if (unsubscribeForegroundEvent) {
       unsubscribeForegroundEvent();
       unsubscribeForegroundEvent = null;
+    }
+    if (unsubscribeTokenRefresh) {
+      unsubscribeTokenRefresh();
+      unsubscribeTokenRefresh = null;
     }
   } catch (err) {
     console.warn('[Notification] cleanupListeners error', err);
@@ -320,6 +330,108 @@ const displayNotification = async (
 };
 
 /***********************
+ * SCHEDULED SESSION REMINDERS
+ ************************/
+export const scheduleSessionReminders = async (session: {
+  _id: string;
+  start_date_time?: string;
+  title?: string;
+  client_name?: string;
+  user_name?: string;
+}): Promise<void> => {
+  try {
+    if (!session?.start_date_time) return;
+
+    const startTime = new Date(session.start_date_time).getTime();
+    const now = Date.now();
+
+    if (isNaN(startTime)) return;
+
+    if (!cachedChannelId && Platform.OS === 'android') {
+      cachedChannelId = await notifee.createChannel({
+        id: 'default',
+        name: 'Default',
+        importance: AndroidImportance.HIGH,
+      });
+    }
+
+    const title = session.title || 'Upcoming Session Reminder';
+    const otherParty = session.client_name || session.user_name;
+    const nameText = otherParty ? ` with ${otherParty}` : '';
+
+    // Schedule 15 minutes before
+    const time15Ms = startTime - 15 * 60 * 1000;
+    if (time15Ms > now) {
+      const trigger15: TimestampTrigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: time15Ms,
+      };
+      await notifee.createTriggerNotification(
+        {
+          id: `reminder-15-${session._id}`,
+          title,
+          body: `Your interpretation session${nameText} starts in 15 minutes. Please be ready!`,
+          data: {
+            type: 'scheduled_session_updated',
+            session_id: session._id,
+            uid: `reminder-15-${session._id}`,
+          },
+          android: {
+            channelId: cachedChannelId!,
+            importance: AndroidImportance.HIGH,
+            pressAction: { id: 'default' },
+          },
+          ios: {
+            foregroundPresentationOptions: {
+              alert: true,
+              badge: true,
+              sound: true,
+            },
+          },
+        },
+        trigger15,
+      );
+    }
+
+    // Schedule 5 minutes before
+    const time5Ms = startTime - 5 * 60 * 1000;
+    if (time5Ms > now) {
+      const trigger5: TimestampTrigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: time5Ms,
+      };
+      await notifee.createTriggerNotification(
+        {
+          id: `reminder-5-${session._id}`,
+          title,
+          body: `Your interpretation session${nameText} starts in 5 minutes! Tap to join.`,
+          data: {
+            type: 'scheduled_session_updated',
+            session_id: session._id,
+            uid: `reminder-5-${session._id}`,
+          },
+          android: {
+            channelId: cachedChannelId!,
+            importance: AndroidImportance.HIGH,
+            pressAction: { id: 'default' },
+          },
+          ios: {
+            foregroundPresentationOptions: {
+              alert: true,
+              badge: true,
+              sound: true,
+            },
+          },
+        },
+        trigger5,
+      );
+    }
+  } catch (err) {
+    console.log('[NotificationService] scheduleSessionReminders error:', err);
+  }
+};
+
+/***********************
  * SERVICE WRAPPER (PUBLIC API)
  ************************/
 class NotificationService {
@@ -344,6 +456,10 @@ class NotificationService {
     } catch (err) {
       console.warn('[NotificationService] initialize error', err);
     }
+  }
+
+  scheduleReminders(session: any): void {
+    scheduleSessionReminders(session);
   }
 
   cleanup(): void {

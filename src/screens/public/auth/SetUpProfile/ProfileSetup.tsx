@@ -482,14 +482,14 @@ const ProfileSetup = () => {
                               prev.map((val, i) =>
                                 i === index
                                   ? {
-                                      ...val,
-                                      expire_date: '',
-                                      image: {
-                                        name: '',
-                                        type: '',
-                                        uri: '',
-                                      },
-                                    }
+                                    ...val,
+                                    expire_date: '',
+                                    image: {
+                                      name: '',
+                                      type: '',
+                                      uri: '',
+                                    },
+                                  }
                                   : val,
                               ),
                             );
@@ -517,16 +517,16 @@ const ProfileSetup = () => {
                                 prev.map((itm, i) =>
                                   i === index
                                     ? {
-                                        ...itm,
-                                        expire_date: '',
-                                        image: {
-                                          name: files[0]?.path?.name || '',
-                                          uri: files[0]?.path?.uri || '',
-                                          type:
-                                            files[0]?.path?.type ||
-                                            'image/jpeg',
-                                        },
-                                      }
+                                      ...itm,
+                                      expire_date: '',
+                                      image: {
+                                        name: files[0]?.path?.name || '',
+                                        uri: files[0]?.path?.uri || '',
+                                        type:
+                                          files[0]?.path?.type ||
+                                          'image/jpeg',
+                                      },
+                                    }
                                     : itm,
                                 ),
                               );
@@ -579,9 +579,9 @@ const ProfileSetup = () => {
                         prev.map((val, i) =>
                           i === index
                             ? {
-                                ...val,
-                                expire_date: moment(date).format('YYYY-MM-DD'),
-                              }
+                              ...val,
+                              expire_date: moment(date).format('YYYY-MM-DD'),
+                            }
                             : val,
                         ),
                       );
@@ -611,14 +611,14 @@ const ProfileSetup = () => {
                       setCertificateList(prev =>
                         prev.length === 1
                           ? prev.map((val, i) =>
-                              i === index
-                                ? {
-                                    ...val,
-                                    expire_date: '',
-                                    image: { name: '', type: '', uri: '' },
-                                  }
-                                : val,
-                            )
+                            i === index
+                              ? {
+                                ...val,
+                                expire_date: '',
+                                image: { name: '', type: '', uri: '' },
+                              }
+                              : val,
+                          )
                           : prev.filter((_, i) => i !== index),
                       );
                     }}
@@ -693,10 +693,10 @@ const ProfileSetup = () => {
                               prev.map((val, i) =>
                                 i === index
                                   ? {
-                                      name: '',
-                                      type: '',
-                                      uri: '',
-                                    }
+                                    name: '',
+                                    type: '',
+                                    uri: '',
+                                  }
                                   : val,
                               ),
                             );
@@ -761,10 +761,10 @@ const ProfileSetup = () => {
                       setIdentificationList(prev =>
                         prev.length === 1
                           ? prev.map((val, i) =>
-                              i === index
-                                ? { name: '', type: '', uri: '' }
-                                : val,
-                            )
+                            i === index
+                              ? { name: '', type: '', uri: '' }
+                              : val,
+                          )
                           : prev.filter((_, i) => i !== index),
                       );
                     }}
@@ -977,10 +977,10 @@ const ProfileSetup = () => {
             prev.map((item, i) =>
               i === imagePickerData.index
                 ? {
-                    name: file?.name || '',
-                    uri: file?.uri || '',
-                    type: file?.type || 'image/jpeg',
-                  }
+                  name: file?.name || '',
+                  uri: file?.uri || '',
+                  type: file?.type || 'image/jpeg',
+                }
                 : item,
             ),
           );

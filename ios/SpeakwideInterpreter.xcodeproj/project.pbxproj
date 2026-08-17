@@ -360,7 +360,7 @@
 				CODE_SIGN_ENTITLEMENTS = SpeakwideInterpreter/SpeakwideInterpreterDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = NJ9R23MKZC;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = SpeakwideInterpreter/Info.plist;
@@ -369,7 +369,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.7;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -393,7 +393,7 @@
 				CODE_SIGN_ENTITLEMENTS = SpeakwideInterpreter/SpeakwideInterpreterRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = NJ9R23MKZC;
 				INFOPLIST_FILE = SpeakwideInterpreter/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -401,7 +401,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6;
+				MARKETING_VERSION = 1.7;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

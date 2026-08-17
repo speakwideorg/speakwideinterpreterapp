@@ -108,14 +108,43 @@ const SupportChat = () => {
     return () => showSub.remove();
   }, []);
 
+  // Auto-fetch and poll chat messages every 3s while focused
   useEffect(() => {
-    dispatch(
-      disputeChatListRequest({
-        limit: 10000,
-        sender_type: 'interpreter',
-      }),
-    );
+    if (!isFocused) return;
+
+    const fetchChatMessages = () => {
+      dispatch(
+        disputeChatListRequest({
+          limit: 10000,
+          sender_type: 'interpreter',
+        }),
+      );
+    };
+
+    fetchChatMessages();
+
+    const intervalId = setInterval(fetchChatMessages, 3000);
+    return () => clearInterval(intervalId);
   }, [isFocused]);
+
+  // Join room on mount/socket connect
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const interpreterId =
+      profileDetailsResponse?._id || messageList?.[0]?.interpreter_id;
+    const roomId = messageList?.[0]?.room_id;
+
+    if (interpreterId) {
+      socket.emit('join_support_chat', { interpreter_id: interpreterId });
+      socket.emit('join_room', { room_id: interpreterId });
+    }
+    if (roomId) {
+      socket.emit('join_support_room', { room_id: roomId });
+      socket.emit('join_room', { room_id: roomId });
+    }
+  }, [profileDetailsResponse?._id, messageList?.[0]?.room_id]);
 
   const renderMessage = useCallback(({ item }: { item: Message }) => {
     const isInterpreterMessage =
@@ -147,10 +176,11 @@ const SupportChat = () => {
         ? 'Uploading...'
         : item?.text || item?.files?.[0]?.file;
 
+    const rawDate = item?.chat_date || item?.createdAt || new Date();
     const formattedTime =
-      moment().diff(moment(item.chat_date), 'days') >= 1
-        ? moment(item.chat_date).format('DD/MM/YY hh:mm A')
-        : `Today ${moment(item.chat_date).format('hh:mm A')}`;
+      moment().diff(moment(rawDate), 'days') >= 1
+        ? moment(rawDate).format('DD/MM/YY hh:mm A')
+        : `Today ${moment(rawDate).format('hh:mm A')}`;
 
     const handleFileDownload = async () => {
       if (!isFile || item.status === 'uploading') return;
@@ -199,27 +229,45 @@ const SupportChat = () => {
     );
   }, []);
 
-  // Separate effect for room-specific messages (if needed)
+  // Socket listener for real-time support chat messages (both sender & receiver)
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
+    const interpreterId =
+      profileDetailsResponse?._id || messageList?.[0]?.interpreter_id;
     const roomId = messageList?.[0]?.room_id;
-    const interpreterId = messageList?.[0]?.interpreter_id;
 
-    if (!roomId || !interpreterId) return;
-
-    const eventName = `${roomId}_${interpreterId}_support_new_message`;
     const handleRoomMessage = (data: Message) => {
-      console.log('Received room-specific message:', data);
-
-      // Don't add own messages, as they are added optimistically
-      if (data.sender_id === profileDetailsResponse?._id) return;
+      console.log('Received real-time support message:', data);
+      if (!data) return;
 
       setMessageList(prev => {
-        if (prev.some(msg => msg._id === data._id)) {
-          return prev;
+        // If message with same _id already exists, don't duplicate
+        const exists = prev.some(
+          msg => msg._id === data._id || (data._id && msg._id === data._id),
+        );
+
+        if (exists) {
+          return prev.map(msg => (msg._id === data._id ? { ...msg, ...data } : msg));
         }
+
+        // If replacing optimistic temp sending message
+        const hasTempMatch = prev.some(
+          msg =>
+            msg.status === 'sending' &&
+            msg.text === data.text &&
+            data.sender_type === 'interpreter',
+        );
+
+        if (hasTempMatch) {
+          return prev.map(msg =>
+            msg.status === 'sending' && msg.text === data.text
+              ? { ...data, status: 'sent' }
+              : msg,
+          );
+        }
+
         return [...prev, data];
       });
 
@@ -228,22 +276,59 @@ const SupportChat = () => {
       }, 100);
     };
 
-    socket.on(eventName, handleRoomMessage);
+    // List of possible socket event names emitted by backend for support chat
+    const eventNames: string[] = [
+      'send_support_message',
+      'receive_support_message',
+      'support_new_message',
+      'new_support_message',
+      'support_message',
+      'message',
+      'new_message',
+    ];
+
+    if (interpreterId) {
+      eventNames.push(`${interpreterId}_support_new_message`);
+      eventNames.push(`support_new_message_${interpreterId}`);
+      eventNames.push(`${interpreterId}_support_message`);
+    }
+    if (roomId && interpreterId) {
+      eventNames.push(`${roomId}_${interpreterId}_support_new_message`);
+    }
+    if (roomId) {
+      eventNames.push(`${roomId}_support_new_message`);
+      eventNames.push(`support_new_message_${roomId}`);
+      eventNames.push(`${roomId}_support_message`);
+    }
+
+    eventNames.forEach(evt => socket.on(evt, handleRoomMessage));
 
     return () => {
-      socket.off(eventName, handleRoomMessage);
+      eventNames.forEach(evt => socket.off(evt, handleRoomMessage));
     };
-  }, [messageList?.[0]?.room_id, messageList?.[0]?.interpreter_id]); // Re-subscribe when room changes
+  }, [
+    profileDetailsResponse?._id,
+    messageList?.[0]?.room_id,
+    messageList?.[0]?.interpreter_id,
+  ]);
 
   useEffect(() => {
     if (disputeChatListResponse?.data?.docs) {
       const newDocs = disputeChatListResponse.data.docs;
-      setMessageList(newDocs); // Reverse to oldest first
 
-      // Scroll to bottom after loading
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 300);
+      setMessageList(prev => {
+        // Only trigger update if doc IDs changed or if new docs came
+        const prevIds = prev.map(m => m._id).join(',');
+        const newIds = newDocs.map((m: any) => m._id).join(',');
+
+        if (prevIds !== newIds) {
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 150);
+          return newDocs;
+        }
+        return prev;
+      });
     }
   }, [disputeChatListResponse]);
 
@@ -350,15 +435,16 @@ const SupportChat = () => {
   // Update handleUploadfile similarly
   const handleUploadfile = async (data: FileCallback[]) => {
     if (data?.length > 0) {
+      const fileInfo = data[0]?.path;
       // Create optimistic file message
       const optimisticMessage: Message = {
         _id: `temp-${Date.now()}`,
         chat_type: 'file',
         files: [
           {
-            file: data[0]?.name || 'file',
-            size: data[0]?.size || 0,
-            type: data[0]?.type || 'file',
+            file: fileInfo?.name || 'file',
+            size: (fileInfo as any)?.size || 0,
+            type: fileInfo?.type || 'file',
           },
         ],
         chat_date: new Date().toISOString(),
@@ -376,7 +462,7 @@ const SupportChat = () => {
       }, 100);
 
       const payload = new FormData();
-      payload.append('files', data[0]?.path);
+      payload.append('files', fileInfo as any);
 
       dispatch(uploadInterpreterMessageFileRequest(payload));
     }

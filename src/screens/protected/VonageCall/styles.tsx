@@ -102,8 +102,13 @@ const getVonageStyles = ({
     },
 
     Hide_VideoStream: {
-      height: 0,
-      width: 0,
+      height: 1,
+      width: 1,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      opacity: 0.01,
+      zIndex: -1,
     },
     bottomContainer: {
       height: bottomContainerHeight,
@@ -121,7 +126,7 @@ const getVonageStyles = ({
       justifyContent: 'center',
       alignItems: 'center',
       borderRadius: bottomIconSize,
-      overflow: 'hidden',
+      overflow: 'visible',
       backgroundColor: Colors.white,
     },
     OT_SmallScreen: {
@@ -133,6 +138,28 @@ const getVonageStyles = ({
       height: '100%',
       width: '100%',
       resizeMode: 'contain',
+    },
+    unreadBadge: {
+      position: 'absolute',
+      top: -normalize(3),
+      right: -normalize(3),
+      backgroundColor: Colors.red_dark,
+      borderRadius: normalize(10),
+      minWidth: normalize(18),
+      height: normalize(18),
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: normalize(4),
+      borderWidth: 1.5,
+      borderColor: Colors.white,
+      zIndex: 10,
+    },
+    unreadBadgeText: {
+      color: Colors.white,
+      fontSize: normalize(9),
+      fontFamily: Fonts.Inter_Bold,
+      textAlign: 'center',
+      lineHeight: Platform.OS === 'ios' ? normalize(11) : undefined,
     },
     loading: {
       flex: 1,
@@ -402,21 +429,26 @@ const getVonageStyles = ({
 
     chatBadge: {
       position: 'absolute',
-      top: 0,
-      right: 0,
-      minWidth: 18,
-      height: 18,
-      borderRadius: 9,
+      top: -normalize(3),
+      right: -normalize(3),
+      minWidth: normalize(18),
+      height: normalize(18),
+      borderRadius: normalize(10),
       backgroundColor: Colors.red_dark,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 4,
+      paddingHorizontal: normalize(4),
+      borderWidth: 1.5,
+      borderColor: Colors.white,
+      zIndex: 10,
     },
 
     chatBadgeText: {
       color: Colors.white,
-      fontSize: normalize(10),
-      fontFamily: Fonts.DMSans_Bold,
+      fontSize: normalize(9),
+      fontFamily: Fonts.Inter_Bold,
+      textAlign: 'center',
+      lineHeight: Platform.OS === 'ios' ? normalize(11) : undefined,
     },
 
     modalMessageTimestamp: {

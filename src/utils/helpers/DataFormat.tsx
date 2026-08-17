@@ -27,7 +27,7 @@ export const isValidEIN = (input?: string): boolean =>
   onlyDigits(input).length === 9;
 
 /**
- * Mask a full SSN for display, showing only the last 4 digits: •••-••-1234
+ * Mask a full SSN for display, showing only the last 4 digits: XXX-XX-1234
  *
  * Interpreters stay permanently signed in so they can receive session-request
  * notifications, which means anyone who picks up an unlocked device can read
@@ -36,17 +36,17 @@ export const isValidEIN = (input?: string): boolean =>
  */
 export const maskSSN = (input?: string): string => {
   const digits = onlyDigits(input);
-  if (!digits) return 'N/A';
-  if (digits.length < 4) return '•••-••-••••';
-  return `•••-••-${digits.slice(-4)}`;
+  if (!digits) return '';
+  if (digits.length < 4) return 'XXX-XX-XXXX';
+  return `XXX-XX-${digits.slice(-4)}`;
 };
 
 /**
- * Mask an EIN for display, showing only the last 4 digits: ••-•••1234
+ * Mask an EIN for display, showing only the last 4 digits: XX-XXX-1234
  */
 export const maskEIN = (input?: string): string => {
   const digits = onlyDigits(input);
-  if (!digits) return 'N/A';
-  if (digits.length < 4) return '••-•••••••';
-  return `••-•••${digits.slice(-4)}`;
+  if (!digits) return '';
+  if (digits.length < 4) return 'XX-XXX-XXXX';
+  return `XX-XXX-${digits.slice(-4)}`;
 };

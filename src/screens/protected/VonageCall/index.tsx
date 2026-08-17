@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Platform, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RouteProp, useIsFocused, useRoute } from '@react-navigation/native';
 import { Colors, Icons, Images } from '@app/themes';
@@ -21,6 +21,8 @@ import { showMessage } from '@app/utils/helpers/Toast';
 import { RootStackParamList, VonageCallProps } from '@app/types';
 import { FileCallback, getFileFromLocal } from '@app/utils/helpers/FileActions';
 import { normalize } from '@app/utils/orientation';
+import KeepAwake from 'react-native-keep-awake';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 
 const VonageCall = () => {
   const { status } = useAppSelector(state => state.interpreterSession);
@@ -57,11 +59,11 @@ const VonageCall = () => {
   const sessionRef = useRef<any>(null);
   const subscriberRef = useRef<any>(null);
   const publisherRef = useRef<any>(null);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isDisconnectingRef = useRef(false);
   const processedSignalIds = useRef<Set<string>>(new Set());
 
-  const [streamId, setStreamId] = useState('');
+  const [_streamId, setStreamId] = useState('');
   const [publishVideo, setPublishVideo] = useState(true);
   const [publishAudio, setPublishAudio] = useState(true);
   const [publishSound, setPublishSound] = useState(true);
@@ -74,10 +76,11 @@ const VonageCall = () => {
   const [page, setPage] = useState(1);
   const [remainingTime, setRemainingTime] = useState<number>(0);
   const [camera, setCamera] = useState<'front' | 'back'>('front');
-  // const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const isAudioOnly =
-    getInterpreterSessionTokenResponse?.data?.session_format === 'Audio';
+    getInterpreterSessionTokenResponse?.data?.session_format?.toLowerCase() ===
+    'audio';
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -107,37 +110,65 @@ const VonageCall = () => {
           goBack();
           showMessage('Call Ended');
         }
-        isDisconnectingRef.current = false;
       }
     },
     [cleanup],
   );
 
-  // Initialize component
+  // Keep-awake and runtime permissions on mount / unmount
   useEffect(() => {
-    if (isFocused) {
-      isDisconnectingRef.current = false;
-      processedSignalIds.current.clear();
-      setStreamId('');
-      setPublishVideo(!isAudioOnly);
-      setPublishAudio(true);
-      setPublishSound(true);
-      setVisibleChat(false);
-      setMessage('');
-      setMsgList([]);
-      setPage(1);
-      setStopCallingApi(false);
-      setIsApiCalling(false);
-      // setUnreadCount(0);
-    }
+    KeepAwake.activate();
+    isDisconnectingRef.current = false;
+
+    const checkAndRequestPermissions = async () => {
+      try {
+        if (Platform.OS === 'ios') {
+          const micRes = await check(PERMISSIONS.IOS.MICROPHONE);
+          if (micRes !== RESULTS.GRANTED) {
+            await request(PERMISSIONS.IOS.MICROPHONE);
+          }
+          if (!isAudioOnly) {
+            const camRes = await check(PERMISSIONS.IOS.CAMERA);
+            if (camRes !== RESULTS.GRANTED) {
+              await request(PERMISSIONS.IOS.CAMERA);
+            }
+          }
+        } else if (Platform.OS === 'android') {
+          const micRes = await check(PERMISSIONS.ANDROID.RECORD_AUDIO);
+          if (micRes !== RESULTS.GRANTED) {
+            await request(PERMISSIONS.ANDROID.RECORD_AUDIO);
+          }
+          if (!isAudioOnly) {
+            const camRes = await check(PERMISSIONS.ANDROID.CAMERA);
+            if (camRes !== RESULTS.GRANTED) {
+              await request(PERMISSIONS.ANDROID.CAMERA);
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Error checking/requesting permissions:', error);
+      }
+    };
+
+    checkAndRequestPermissions();
 
     return () => {
+      KeepAwake.deactivate();
       cleanup();
-      disconnectCall(false);
+      if (!isDisconnectingRef.current) {
+        disconnectCall(false);
+      }
       dispatch(resetInterpreterSessionToken());
       processedSignalIds.current.clear();
     };
-  }, [isFocused, isAudioOnly]);
+  }, []);
+
+  // Sync publish state on format change without tearing down call
+  useEffect(() => {
+    setPublishVideo(!isAudioOnly);
+    setPublishAudio(true);
+    setPublishSound(true);
+  }, [isAudioOnly]);
 
   // Timer countdown
   useEffect(() => {
@@ -182,7 +213,6 @@ const VonageCall = () => {
         } else {
           if (msgHistory?.length) {
             setMsgList(prev => {
-              // Prevent duplicates
               const existingIds = new Set(prev.map(msg => msg._id));
               const newMessages = msgHistory.filter(
                 msg => !existingIds.has(msg._id),
@@ -218,14 +248,6 @@ const VonageCall = () => {
     const endTime = new Date(endDateTime);
     const now = new Date();
     const timeDiff = endTime.getTime() - now.getTime();
-
-    console.log('VonageCall - End time:', endTime);
-    console.log('VonageCall - Current time:', now);
-    console.log('VonageCall - Time diff (ms):', timeDiff);
-    console.log(
-      'VonageCall - Time diff (seconds):',
-      Math.floor(timeDiff / 1000),
-    );
 
     if (timeDiff > 0) {
       setRemainingTime(Math.floor(timeDiff / 1000));
@@ -299,13 +321,11 @@ const VonageCall = () => {
             return;
         }
 
-        // Send signal
         setSignal({
           type: 'chat',
           data: message_temp,
         });
 
-        // Send to backend
         dispatch(
           sendInterpreterMsgRequest({
             sessionId,
@@ -314,7 +334,6 @@ const VonageCall = () => {
           }),
         );
 
-        // Add to local message list immediately
         const newMessage: VonageMessageInterface = {
           _id: `temp-${Date.now()}`,
           message: message_temp,
@@ -379,7 +398,7 @@ const VonageCall = () => {
     },
     streamDestroyed: (event: any) => {
       console.log('Stream destroyed:', event.streamId);
-      setStreamId('');
+      setStreamId(prev => (prev === event.streamId ? '' : prev));
     },
     sessionDisconnected: () => {
       console.log('Session disconnected');
@@ -391,7 +410,6 @@ const VonageCall = () => {
       setMessage('');
     },
     signal: (event: any) => {
-      // Handle both 'signal:chat' and 'chat' event types
       const eventType = event?.type || '';
       if (!eventType.includes('chat') || !event?.data) {
         return;
@@ -400,27 +418,21 @@ const VonageCall = () => {
       try {
         const parsed = JSON.parse(event.data);
 
-        // Ignore self-sent messages
         if (parsed?.id === userId) return;
 
-        // Create unique ID for the signal message
         const signalId = `signal-${parsed.timestamp}-${parsed.id}`;
 
-        // Check if already processed
         if (processedSignalIds.current.has(signalId)) {
           console.log('Signal already processed:', signalId);
           return;
         }
 
-        // Mark as processed
         processedSignalIds.current.add(signalId);
 
-        // Increase unread only if chat is closed
-        // if (!visibleChat) {
-        //   setUnreadCount(prev => prev + 1);
-        // }
+        if (!visibleChat) {
+          setUnreadCount(prev => prev + 1);
+        }
 
-        // Add message to the list
         const newMessage: VonageMessageInterface = {
           _id: signalId,
           message: event.data,
@@ -430,7 +442,6 @@ const VonageCall = () => {
         };
 
         setMsgList(prev => {
-          // Double check if message exists
           if (prev.some(msg => msg._id === signalId)) {
             return prev;
           }
@@ -444,7 +455,9 @@ const VonageCall = () => {
     },
     error: (error: any) => {
       console.log('Session--- Session error:', error);
-      showMessage('Session error occurred');
+      const errMsg =
+        error?.message || error?.errorDescription || 'Session error occurred';
+      showMessage(errMsg);
     },
   };
 
@@ -511,13 +524,30 @@ const VonageCall = () => {
         >
           <View style={styles.visibleContainer}>
             <View style={styles.topContainer}>
-              {isAudioOnly ? (
+              {/* OTSubscriber is ALWAYS rendered so incoming audio is received in both audio and video modes */}
+              <OTSubscriber
+                ref={subscriberRef}
+                style={styles.OT_BigScreen}
+                properties={{
+                  audioVolume: publishSound ? 100 : 0,
+                  subscribeToAudio: publishSound,
+                  subscribeToVideo: !isAudioOnly,
+                  preferredFrameRate: 15,
+                  preferredResolution: '640x480',
+                }}
+              />
+
+              {/* In Audio-Only mode, render the Avatar image over the subscriber view */}
+              {isAudioOnly && (
                 <View
-                  style={{
-                    flex: 1,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
+                  style={[
+                    StyleSheet.absoluteFillObject,
+                    {
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      backgroundColor: Colors.black_g20,
+                    },
+                  ]}
                 >
                   <Image
                     source={
@@ -544,38 +574,42 @@ const VonageCall = () => {
                     {oponentUserName}
                   </Text>
                 </View>
-              ) : (
-                <OTSubscriber
-                  ref={subscriberRef}
-                  streamId={streamId}
-                  style={styles.OT_BigScreen}
-                  properties={{
-                    audioVolume: publishSound ? 100 : 0,
-                    preferredFrameRate: 15,
-                    preferredResolution: '640x480',
-                  }}
-                />
               )}
-              {!isAudioOnly && (
-                <View style={styles.switchSmallScreenContainer}>
+
+              {/* OTPublisher is ALWAYS rendered so microphone audio is captured in both modes */}
+              <View
+                style={
+                  isAudioOnly
+                    ? {
+                        position: 'absolute',
+                        width: 100,
+                        height: 100,
+                        opacity: 0.01,
+                        zIndex: -1,
+                      }
+                    : styles.switchSmallScreenContainer
+                }
+              >
+                {!isAudioOnly && (
                   <TouchableOpacity
                     style={styles.switchCameraContainer}
                     onPress={toggleCamera}
                   >
                     <Image source={Icons.camera} style={styles.cameraIcon} />
                   </TouchableOpacity>
-                  <OTPublisher
-                    style={styles.OT_SmallScreen}
-                    properties={{
-                      publishAudio: publishAudio,
-                      publishVideo: publishVideo,
-                      cameraPosition: camera,
-                      frameRate: 30,
-                      resolution: '640x480',
-                    }}
-                  />
-                </View>
-              )}
+                )}
+                <OTPublisher
+                  ref={publisherRef}
+                  style={styles.OT_SmallScreen}
+                  properties={{
+                    publishAudio: publishAudio,
+                    publishVideo: !isAudioOnly && publishVideo,
+                    cameraPosition: camera,
+                    frameRate: 30,
+                    resolution: '640x480',
+                  }}
+                />
+              </View>
             </View>
 
             <View style={styles.bottomContainer}>
@@ -617,10 +651,17 @@ const VonageCall = () => {
                 style={styles.bottomIconContainer}
                 onPress={() => {
                   setVisibleChat(true);
-                  // setUnreadCount(0);
+                  setUnreadCount(0);
                 }}
               >
                 <Image source={Icons.icon_chat} style={styles.bottomIcon} />
+                {unreadCount > 0 && (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -661,3 +702,4 @@ const VonageCall = () => {
 };
 
 export default VonageCall;
+

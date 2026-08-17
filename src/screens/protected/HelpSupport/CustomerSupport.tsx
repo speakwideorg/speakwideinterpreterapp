@@ -17,9 +17,17 @@ import { navigate } from '@app/navigation/RootNaivgation';
 
 const { width } = Dimensions.get('screen');
 
+// Real Speakwide support contact details.
+// These were previously hardcoded to developer placeholders (+919876543210 and
+// test@gmail.com), so tapping Call or Email reached a dead number/mailbox.
+// If SUPPORT_PHONE is ever blanked out, the Call option hides itself rather than
+// dialling an incorrect number.
+const SUPPORT_PHONE = '+13053308071';
+const SUPPORT_EMAIL = 'customerservice@speakwide.com';
+
 const contactOptions = [
   { id: '1', label: 'Chat', icon: Icons.chat },
-  { id: '2', label: 'Call', icon: Icons.call },
+  ...(SUPPORT_PHONE ? [{ id: '2', label: 'Call', icon: Icons.call }] : []),
   { id: '3', label: 'Email', icon: Icons.email },
 ];
 
@@ -72,21 +80,20 @@ const CustomerSupport = () => {
             style={styles.backgroundHeader}
           />
           <View style={styles.optionsContainer}>
-            {contactOptions.map((item, index) => (
+            {contactOptions.map(item => (
               <ContactOption
                 key={item.id}
                 label={item.label}
                 icon={item.icon}
                 onPress={() => {
-                  if (index === 0) {
-                    navigate('SupportChat', {
-                      type: 'Chat',
-                      title: 'Waiting for Interpreter to Join...',
-                    });
-                  } else if (index === 1) {
-                    handleCall('+919876543210');
-                  } else if (index === 2) {
-                    handleEmail('test@gmail.com');
+                  // Keyed off the option's id rather than its array index, since the
+                  // Call option is omitted when no support number is configured.
+                  if (item.id === '1') {
+                    navigate('SupportChat');
+                  } else if (item.id === '2') {
+                    handleCall(SUPPORT_PHONE);
+                  } else if (item.id === '3') {
+                    handleEmail(SUPPORT_EMAIL, 'Speakwide Support Request');
                   }
                 }}
               />

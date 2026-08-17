@@ -23,3 +23,11 @@ declare module '@env' {
   export const FIREBASE_IOS_API_KEY: string;
   export const FIREBASE_IOS_BUNDLE_ID: string;
 }
+
+declare module 'react-native-keep-awake' {
+  const KeepAwake: {
+    activate(): void;
+    deactivate(): void;
+  };
+  export default KeepAwake;
+}

@@ -1891,6 +1891,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
+  - react-native-keep-awake (4.0.0):
+    - React
   - react-native-netinfo (11.4.1):
     - React-Core
   - react-native-render-html (6.3.4):
@@ -3147,6 +3149,7 @@ DEPENDENCIES:
   - "react-native-cameraroll (from `../node_modules/@react-native-camera-roll/camera-roll`)"
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - "react-native-document-picker (from `../node_modules/@react-native-documents/picker`)"
+  - react-native-keep-awake (from `../node_modules/react-native-keep-awake`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-render-html (from `../node_modules/react-native-render-html`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -3326,6 +3329,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-date-picker"
   react-native-document-picker:
     :path: "../node_modules/@react-native-documents/picker"
+  react-native-keep-awake:
+    :path: "../node_modules/react-native-keep-awake"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-render-html:
@@ -3495,6 +3500,7 @@ SPEC CHECKSUMS:
   react-native-cameraroll: 5c5fb716af11f6178dca48271ae065cd786a0a02
   react-native-date-picker: 64b7a370be3e19342da910759b79a63dbb981430
   react-native-document-picker: 96aed29fdd6fc8833011ef64be48e4c68eb346cd
+  react-native-keep-awake: 21ff40767cde4bd81021ffee12480aee4b5b91bb
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
   react-native-render-html: 5afc4751f1a98621b3009432ef84c47019dcb2bd
   react-native-safe-area-context: 1253cc163c459494057aaae3e8c02fcdad674f0d
@@ -3538,7 +3544,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: a5a26c1bb50a095f9a2064aee8c5bf7059942124
   RNImageCropPicker: c83c85012d3d860e1fb40f21bd185e7c95a03506
   RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
-  RNPermissions: b1c6a42e2065d6e3907c624af0b5b0ce323e402d
+  RNPermissions: 0d5b0ca0cc8b2469337ce9170292f7c5921ce9ba
   RNPersonaInquiry2: 524c6fcc956c3e6056cfea659127435b7ce2a6ac
   RNReanimated: be0bc51a01858c195f6df763ec2334b8bfe6f408
   RNScreens: eff474e98669c2a4dbe7e43ee9464682711182ea
@@ -3559,6 +3565,6 @@ SPEC CHECKSUMS:
   TOCropViewController: 80b8985ad794298fb69d3341de183f33d1853654
   Yoga: ce248fb32065c9b00451491b06607f1c25b2f1ed
 
-PODFILE CHECKSUM: b78bd864030b5b03a2928351e058d27a57cc6e74
+PODFILE CHECKSUM: 9c03748ff6a72e300a559d4c75a9d12d8b6e7a8d
 
 COCOAPODS: 1.17.0

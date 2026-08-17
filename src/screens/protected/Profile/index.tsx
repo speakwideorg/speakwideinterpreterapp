@@ -212,14 +212,18 @@ const Profile = () => {
             <LabeledRow
               icon={Icons.admin_panel_settings}
               label="Social Security Number"
-              value={maskSSN(
-                profileDetails?.social_security_number || profileDetails?.ssn_last4,
-              )}
+              value={
+                maskSSN(
+                  profileDetails?.social_security_number || profileDetails?.ssn_last4,
+                ) || 'N/A'
+              }
             />
             <LabeledRow
               icon={Icons.frame_person}
               label="EIN"
-              value={maskEIN(profileDetails?.ein || profileDetails?.ein_last4)}
+              value={
+                maskEIN(profileDetails?.ein || profileDetails?.ein_last4) || 'N/A'
+              }
             />
             <LabeledRow
               icon={Icons.person_play}
