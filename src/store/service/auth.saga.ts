@@ -33,6 +33,7 @@ import { store } from '..';
 import { persistor } from '..'; // import persistor here
 import { showMessage } from '@app/utils/helpers/Toast';
 import Storage from '@app/utils/storage';
+import { updateBadgeCount } from '@app/utils/helpers/NotificationService';
 
 function* handleCreateAccount(action: any) {
   try {
@@ -143,6 +144,7 @@ function* handleLogout() {
     console.log('Logout API error (completing local logout):', error?.response?.data || error?.message || error);
   } finally {
     Storage.clearAll();
+    yield call(updateBadgeCount, 0);
     yield call([persistor, persistor.purge]);
     yield put({ type: 'RESET_STORE' });
     yield put(logoutSuccess({ data: {} }));

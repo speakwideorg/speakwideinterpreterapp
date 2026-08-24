@@ -22,6 +22,7 @@ import notifee, {
 } from '@notifee/react-native';
 import { store } from '../../store/index';
 import { setDeviceToken } from '@app/store/slice/auth.slice';
+import { unreadCountRequest } from '@app/store/slice/Notification.slice';
 import { navigate } from '@app/navigation/RootNaivgation';
 
 type RemoteMessage = {
@@ -201,6 +202,28 @@ const cleanupListeners = () => {
 };
 
 /***********************
+ * BADGE MANAGEMENT (IOS & ANDROID)
+ ************************/
+export const updateBadgeCount = async (count: number): Promise<void> => {
+  try {
+    const validCount = Math.max(0, Number(count) || 0);
+    await notifee.setBadgeCount(validCount);
+    console.log('[NotificationService] App icon badge count updated to:', validCount);
+  } catch (error) {
+    console.log('[NotificationService] updateBadgeCount error:', error);
+  }
+};
+
+export const getBadgeCount = async (): Promise<number> => {
+  try {
+    return await notifee.getBadgeCount();
+  } catch (error) {
+    console.log('[NotificationService] getBadgeCount error:', error);
+    return 0;
+  }
+};
+
+/***********************
  * MAIN FCM LISTENERS
  * RETURNS cleanup function
  ************************/
@@ -215,6 +238,20 @@ export const registerListenerWithFCM = (): (() => void) => {
     const data = extractNotificationData(remoteMessage);
     await displayNotification(data.title, data.body, data);
     console.log('[Notification] Received:', remoteMessage);
+
+    // Refresh unread count & badge when foreground message arrives
+    const token = store.getState()?.auth?.token;
+    if (token) {
+      store.dispatch(unreadCountRequest({}));
+    } else {
+      const badgeVal = remoteMessage?.data?.badge ?? remoteMessage?.data?.unread_count;
+      if (badgeVal !== undefined && badgeVal !== null) {
+        const badge = Number(badgeVal);
+        if (!isNaN(badge)) {
+          await updateBadgeCount(badge);
+        }
+      }
+    }
   });
 
   // FOREGROUND PRESS (notifee)
@@ -280,6 +317,13 @@ export const handleBackgroundMessage = async (
 ): Promise<void> => {
   const data = extractNotificationData(remoteMessage);
   await displayNotification(data.title, data.body, data);
+  const badgeVal = remoteMessage?.data?.badge ?? remoteMessage?.data?.unread_count;
+  if (badgeVal !== undefined && badgeVal !== null) {
+    const badge = Number(badgeVal);
+    if (!isNaN(badge)) {
+      await updateBadgeCount(badge);
+    }
+  }
 };
 
 /***********************
@@ -475,6 +519,14 @@ class NotificationService {
     } finally {
       isInitialized = false;
     }
+  }
+
+  updateBadgeCount(count: number): Promise<void> {
+    return updateBadgeCount(count);
+  }
+
+  getBadgeCount(): Promise<number> {
+    return getBadgeCount();
   }
 
   async reinitialize(): Promise<void> {

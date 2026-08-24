@@ -168,6 +168,9 @@ const NotificationSlice = createSlice({
             state.loading = false;
             state.status = action.type;
             state.notificationMarkAllReadResponse = action?.payload?.response;
+            if (state.unreadCountResponse?.data) {
+                state.unreadCountResponse.data.unread_count = 0;
+            }
         },
         notificationMarkAllReadFailure(state, action: payload_interface) {
             state.loading = false;
@@ -186,6 +189,9 @@ const NotificationSlice = createSlice({
             state.loading = false;
             state.status = action.type;
             state.notificationDeleteAllResponse = action?.payload?.response;
+            if (state.unreadCountResponse?.data) {
+                state.unreadCountResponse.data.unread_count = 0;
+            }
         },
         notificationDeleteAllFailure(state, action: payload_interface) {
             state.loading = false;

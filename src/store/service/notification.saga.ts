@@ -7,6 +7,7 @@ import { showMessage } from '@app/utils/helpers/Toast';
 import {
   notificationListFailure,
   notificationListSuccess,
+  unreadCountRequest,
   unreadCountSuccess,
   unreadCountFailure,
   unreadListSuccess,
@@ -22,6 +23,7 @@ import {
   notificationDeleteAllSuccess,
   notificationDeleteAllFailure,
 } from '../slice/Notification.slice';
+import { updateBadgeCount } from '@app/utils/helpers/NotificationService';
 
 // REUSABLE API CALL HANDLER
 function* apiHandler(
@@ -62,13 +64,26 @@ function* handleNotificationListRequest(action: any) {
 
 // UNREAD COUNT
 function* handleUnreadCountRequest() {
-  yield* apiHandler(
-    () => instance.get(API.notification.unread_count),
-    null,
-    unreadCountSuccess,
-    unreadCountFailure,
-    false,
-  );
+  try {
+    const result: AxiosResponse<any> = yield call(
+      instance.get,
+      API.notification.unread_count,
+    );
+    if (result?.status === 200 || result?.status === 201) {
+      yield put(unreadCountSuccess({ response: result?.data }));
+      const unreadCount =
+        result?.data?.data?.unread_count ??
+        result?.data?.unread_count ??
+        result?.data?.data?.count ??
+        result?.data?.count ??
+        0;
+      yield call(updateBadgeCount, Number(unreadCount) || 0);
+    } else {
+      yield put(unreadCountFailure({ response: result?.data }));
+    }
+  } catch (error: any) {
+    yield put(unreadCountFailure({ response: error?.response?.data }));
+  }
 }
 
 // UNREAD LIST
@@ -101,20 +116,21 @@ function* handleNotificationDeleteRequest(action: any) {
     notificationDeleteSuccess,
     notificationDeleteFailure,
   );
+  yield put(unreadCountRequest({}));
 }
 
 // MARK SINGLE AS READ
 function* handleNotificationMarkReadRequest(action: any) {
-  let url = `${API.notification.noti_details}${action.payload.id}/read`
-  console.log(url, "__url");
+  let url = `${API.notification.noti_details}${action.payload.id}/read`;
+  console.log(url, '__url');
 
   yield* apiHandler(
-    () =>
-      instance.put(url),
+    () => instance.put(url),
     null,
     notificationMarkReadSuccess,
     notificationMarkReadFailure,
   );
+  yield put(unreadCountRequest({}));
 }
 
 // MARK ALL READ
@@ -125,6 +141,7 @@ function* handleNotificationMarkAllReadRequest() {
     notificationMarkAllReadSuccess,
     notificationMarkAllReadFailure,
   );
+  yield put(unreadCountRequest({}));
 }
 
 // DELETE ALL
@@ -135,6 +152,7 @@ function* handleNotificationDeleteAllRequest() {
     notificationDeleteAllSuccess,
     notificationDeleteAllFailure,
   );
+  yield put(unreadCountRequest({}));
 }
 
 // WATCHERS
