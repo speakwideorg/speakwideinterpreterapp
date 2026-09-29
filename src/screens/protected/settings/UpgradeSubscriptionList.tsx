@@ -21,21 +21,33 @@ import { useAppDispatch, useAppSelector } from '@app/store';
 import { useIsFocused } from '@react-navigation/native';
 import { subscriptionListRequest } from '@app/store/slice/default.slice';
 import KeyboardAvoidingTemplate from '@app/components/template/KeyboardAvoidingTemplate';
-import { goBack } from '@app/navigation/RootNaivgation';
+import { goBack, navigate } from '@app/navigation/RootNaivgation';
+import { resetUserDefaults } from '@app/store/slice/user.slice';
 
 const UpgradeSubscriptionList = () => {
   const isFocused = useIsFocused();
   const dispatch = useAppDispatch();
-  const { isLoading } = useAppSelector(state => state.user);
+  const { isLoading, status } = useAppSelector(state => state.user);
   const subscriptionList = useAppSelector(
     state => state.default.subscriptionListResponse,
   );
 
   useEffect(() => {
-    if (isFocused) {
+    if (isFocused && (!subscriptionList || subscriptionList.length === 0)) {
       dispatch(subscriptionListRequest({}));
     }
-  }, [dispatch, isFocused]);
+  }, [dispatch, isFocused, subscriptionList]);
+
+  useEffect(() => {
+    if (isFocused && status === 'user/subscribeFreePlanSuccess') {
+      dispatch(resetUserDefaults());
+      navigate('Success', {
+        type: 'UpgradeSubscription',
+        title: 'Subscription ',
+        title1: 'Confirmed!',
+      });
+    }
+  }, [status, isFocused, dispatch]);
 
   const [visible, setVisible] = useState(false);
 
@@ -62,7 +74,7 @@ const UpgradeSubscriptionList = () => {
       >
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => goBack()}
+            onPress={() => navigate('Settings')}
             style={styles.backContainer}
           >
             <Image source={Icons.arrow_right} style={styles.arrow_right} />
@@ -75,13 +87,13 @@ const UpgradeSubscriptionList = () => {
         </View>
 
         <View style={[Css.asc, Css.mt9]}>
-          {subscriptionList
+          {Array.isArray(subscriptionList)
             ? subscriptionList?.map((item: any, index: number) => {
                 return (
                   <SubscriptionPlanItem
                     index={index}
                     item={item}
-                    key={index}
+                    key={item?._id ? `plan_${item._id}` : `plan_${index}`}
                     marginRight={0}
                     marginBottom={normalize(12)}
                   />
@@ -125,7 +137,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: normalize(18),
-    // paddingTop: normalize(isIos() ? 12 : 20),
   },
   title: {
     fontFamily: Fonts.Manrope_Bold,

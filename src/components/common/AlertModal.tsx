@@ -7,7 +7,6 @@ import {
   Platform,
   Keyboard,
 } from 'react-native';
-import { BlurView } from '@react-native-community/blur';
 import LinearGradient from 'react-native-linear-gradient';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -120,13 +119,6 @@ const AlertModal: React.FC<AlertModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        {/* Blur background */}
-        <BlurView
-          style={StyleSheet.absoluteFill}
-          blurType="light"
-          blurAmount={4}
-          reducedTransparencyFallbackColor={hexToRGB(Colors.dark_lilac, 0.7)}
-        />
         <View style={styles.backdrop} />
 
         {/* Scrollable content */}

@@ -137,9 +137,9 @@ const ChatHistory = () => {
 };
 
 const RaiseDispute = () => {
-  const screens: {
+  const screens: Partial<{
     [K in keyof RaiseDisputeStackParamList]: React.ComponentType<any>;
-  } = {
+  }> = {
     Dispute: RaiseDisputeScreen,
     Success: Success,
   };
@@ -231,7 +231,7 @@ const Settings = () => {
 
   return (
     <SettingsStack.Navigator
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, gestureEnabled: false }}
       initialRouteName="Settings"
     >
       {renderScreens<SettingsStackParamList>(screens, SettingsStack)}
@@ -240,9 +240,9 @@ const Settings = () => {
 };
 
 const DrawerNavigation = () => {
-  const drawerScreens: {
+  const drawerScreens: Partial<{
     [K in keyof RootDrawerParamList]: React.ComponentType<any>;
-  } = {
+  }> = {
     Dashboard,
     Calendar: Calender,
     SessionHistory,

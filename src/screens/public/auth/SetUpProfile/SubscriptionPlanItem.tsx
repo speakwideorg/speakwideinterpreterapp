@@ -13,6 +13,8 @@ import { normalize } from '@app/utils/orientation';
 import Button from '@app/components/common/Button';
 import { navigate } from '@app/navigation/RootNaivgation';
 import Css from '@app/themes/Css';
+import { useAppDispatch } from '@app/store';
+import { subscribeFreePlanRequest } from '@app/store/slice/user.slice';
 
 const { width } = Dimensions.get('screen');
 
@@ -20,25 +22,27 @@ export interface SubscriptionPlanInterface {
   _id: string;
   title: string;
   price: number;
-  stripeProductId: string;
-  stripePriceId: string;
+  stripeProductId?: string;
+  stripePriceId?: string;
   plans: {
-    pay_frequency: {
+    pay_frequency?: {
       interval: string;
       frequency: number;
     };
-    no_of_sessions: string;
-    isUnlimitedSession: boolean;
-    priority_response: boolean;
-    allday_support: boolean;
+    no_of_sessions?: string | number;
+    isUnlimitedSession?: boolean;
+    priority_response?: boolean;
+    allday_support?: boolean;
+    no_of_users?: number;
+    [key: string]: any;
   };
-  status: string;
-  free_trial_in_days: number;
+  status?: string;
+  free_trial_in_days?: number;
 }
 
 interface SubscriptionPlanItemProps {
   item: SubscriptionPlanInterface;
-  index: number;
+  index: number | string;
   isLastIndex?: boolean;
   isHideButton?: boolean;
   marginRight?: number;
@@ -52,12 +56,21 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
   marginRight = normalize(6),
   marginBottom = 0,
 }) => {
+  const dispatch = useAppDispatch();
+  if (!item) {
+    return null;
+  }
+  const isFree =
+    item?.price === 0 || item?.title?.trim()?.toLowerCase() === 'bronze';
+
   const plans = [
     {
       isAvailable: true,
       title: '# of sessions',
       subTitle: '(per month)',
-      value: item?.plans?.no_of_sessions,
+      value: item?.plans?.isUnlimitedSession
+        ? 'Unlimited'
+        : item?.plans?.no_of_sessions,
     },
     {
       isAvailable: true,
@@ -72,12 +85,22 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
       value: '',
     },
     {
-      isAvailable: item?.plans?.allday_support, // FIXED: earlier it was always false
+      isAvailable: item?.plans?.allday_support,
       title: '24/7 Support',
       subTitle: '',
       value: '',
     },
   ];
+
+  const handleChoosePlan = () => {
+    if (isFree) {
+      dispatch(subscribeFreePlanRequest({ planId: item?._id }));
+    } else {
+      navigate('SubscriptionPlanDetails', {
+        planId: item?._id,
+      });
+    }
+  };
 
   return (
     <View key={index} style={[styles.card, { marginRight, marginBottom }]}>
@@ -91,11 +114,11 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
 
         <View style={[Css.f1, Css.p6, Css.pb5]}>
           <Text style={styles.price}>
-            {`${item?.price}`}
-            {<Text style={styles.plan}>/month</Text>}
+            {isFree ? 'Free' : `${item?.price}`}
+            {!isFree && <Text style={styles.plan}>/month</Text>}
           </Text>
 
-          {item?.free_trial_in_days > 0 && (
+          {item?.free_trial_in_days !== undefined && item?.free_trial_in_days > 0 && (
             <Text
               style={[
                 styles.txt,
@@ -155,7 +178,7 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
                       {` ${_item?.subTitle}`}
                     </Text>
                   ) : null}
-                  {_item?.value && `: ${_item?.value}`}
+                  {_item?.value ? `: ${_item?.value}` : ''}
                 </Text>
               </View>
             ))}
@@ -163,11 +186,7 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
 
           {!isHideButton && (
             <Button
-              onPress={() =>
-                navigate('SubscriptionPlanDetails', {
-                  planId: item?._id,
-                })
-              }
+              onPress={handleChoosePlan}
               title={'Choose Plan'}
               fontFamily={Fonts.Inter_Medium}
               width={'100%'}

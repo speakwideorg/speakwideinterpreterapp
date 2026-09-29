@@ -164,29 +164,23 @@ const CustomDrawer: React.FC<DrawerContentComponentProps> = ({
         </TouchableOpacity>
       </View>
 
-      {isLogout && (
-        <AlertModal
-          visible={isLogout}
-          onClose={() => setIsLogout(false)}
-          padding={0}
-          paddingTop={normalize(isIos() ? 190 : 180)}
-        >
-          <LogoutConfirmation
-            onCancel={() => setIsLogout(false)}
-            onConfirm={() => {
-              setIsLogout(false);
+      <AlertModal
+        visible={isLogout}
+        onClose={() => setIsLogout(false)}
+        padding={0}
+        paddingTop={normalize(isIos() ? 190 : 180)}
+      >
+        <LogoutConfirmation
+          onCancel={() => setIsLogout(false)}
+          onConfirm={() => {
+            setIsLogout(false);
+            navigation.closeDrawer();
+            setTimeout(() => {
               dispatch(logoutRequest({}));
-              // setTimeout(() => {
-              //   navigate('Success', {
-              //     type: 'Logout',
-              //     title1: 'Successfully',
-              //     title4: '\nLogged Out',
-              //   });
-              // }, 300);
-            }}
-          />
-        </AlertModal>
-      )}
+            }, 500);
+          }}
+        />
+      </AlertModal>
     </View>
   );
 };

@@ -73,11 +73,11 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
   marginBottom = 0,
 }) => {
   const { profileDetailsResponse } = useAppSelector(state => state.auth);
-  console.log(
-    'profileDetailsResponse',
-    profileDetailsResponse.subscriptionDetails.planDetails._id,
-    item._id,
-  );
+
+  if (!item) {
+    return null;
+  }
+
   const plans = [
     {
       isAvailable: true,
@@ -89,7 +89,7 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
       isAvailable: true,
       title: 'Pay Frequency',
       subTitle: '',
-      value: item?.plans?.pay_frequency.frequency,
+      value: item?.plans?.pay_frequency?.frequency,
     },
     {
       isAvailable: item?.plans?.priority_response,
@@ -106,7 +106,7 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
   ];
 
   return (
-    <View key={index} style={[styles.card, { marginRight, marginBottom }]}>
+    <View style={[styles.card, { marginRight, marginBottom }]}>
       <LinearGradient
         useAngle={true}
         angle={160}
@@ -120,10 +120,10 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
           </View> */}
         <View style={[Css.f1, Css.p6, Css.pb15]}>
           <Text style={styles.price}>
-            {`${item?.price}`}
+            {item?.price !== undefined ? `${item?.price}` : ''}
             {<Text style={styles.plan}>/monthly</Text>}
           </Text>
-          {item?.free_trial_in_days > 0 && (
+          {item?.free_trial_in_days !== undefined && item?.free_trial_in_days > 0 && (
             <Text
               style={[
                 styles.txt,
@@ -135,7 +135,7 @@ const SubscriptionPlanItem: FC<SubscriptionPlanItemProps> = ({
           )}
           {/* {item?.trial && <Text style={styles.trail}>{item.trial}</Text>} */}
           <ImageBackground source={Images.shapebox} style={styles.shape}>
-            <Text style={styles.type}>{item.title} Monthly Plan</Text>
+            <Text style={styles.type}>{item?.title || ''} Monthly Plan</Text>
           </ImageBackground>
 
           <Text style={styles.txt}>This plan gets</Text>

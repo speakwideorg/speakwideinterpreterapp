@@ -8,7 +8,6 @@ import {
   Image,
   Text,
 } from 'react-native';
-import { BlurView } from '@react-native-community/blur';
 import { normalize } from '@app/utils/orientation';
 import { Colors, Fonts, Images } from '@app/themes';
 import { hexToRGB } from '@app/utils/helpers';
@@ -33,12 +32,6 @@ const ExitAppModal: React.FC<AlertModalProps> = ({
       statusBarTranslucent
     >
       <View style={[styles.overlay]}>
-        <BlurView
-          style={StyleSheet.absoluteFill}
-          blurType="light"
-          blurAmount={4}
-          reducedTransparencyFallbackColor={hexToRGB(Colors.dark_lilac, 0.7)}
-        />
         <View style={styles.backdrop} />
 
         <Animated.View style={styles.contentWrapper}>

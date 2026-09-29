@@ -23,6 +23,7 @@ import {
   addCardRequest,
   addPaymentMethodRequest,
   cardListRequest,
+  resetUserDefaults,
 } from '@app/store/slice/user.slice';
 import { showMessage } from '@app/utils/helpers/Toast';
 import { useAppDispatch, useAppSelector } from '@app/store';
@@ -79,6 +80,7 @@ const AddNewCard: React.FC<Props> = ({ onCancel, onConfirm }) => {
       switch (status) {
         case 'user/addCardSuccess': {
           dispatch(cardListRequest({}));
+          dispatch(resetUserDefaults());
           onConfirm({
             cardHolderName: info.cardHolderName,
             cardNumber: info.cardNumber,
@@ -97,6 +99,7 @@ const AddNewCard: React.FC<Props> = ({ onCancel, onConfirm }) => {
           break;
         }
         case 'user/addCardFailure': {
+          dispatch(resetUserDefaults());
           break;
         }
       }

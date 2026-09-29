@@ -7,7 +7,7 @@ import {
   Dimensions,
   TouchableOpacity,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import KeyboardAvoidingTemplate from '@app/components/template/KeyboardAvoidingTemplate';
 import { normalize } from '@app/utils/orientation';
 import { Colors, Fonts, Icons, Images } from '@app/themes';
@@ -20,16 +20,31 @@ import { PERSONA_KEY, PERSONA_KEY_LIVE } from '@env';
 import {
   logoutRequest,
   profileDetailsRequest,
+  updateOnboardingStatus,
 } from '@app/store/slice/auth.slice';
 import ExitAppModal from '@app/components/template/ExitPopup';
+import { navigate } from '@app/navigation/RootNaivgation';
+import { useIsFocused } from '@react-navigation/native';
 
 const PersonaValidation = () => {
+  const isFocused = useIsFocused();
   const dispatch = useAppDispatch();
   const userId = useAppSelector(state => state.auth.userId);
   const personaVerifyStatus = useAppSelector(
     state => state.auth.profileDetailsResponse?.personaVerifyStatus,
   );
   const [isExit, setIsExit] = useState(false);
+
+  useEffect(() => {
+    if (
+      isFocused &&
+      (personaVerifyStatus === 'approved' ||
+        personaVerifyStatus === 'completed')
+    ) {
+      dispatch(updateOnboardingStatus('availability_setup'));
+      navigate('AvailabilitySetup');
+    }
+  }, [personaVerifyStatus, isFocused, dispatch]);
 
   return (
     <KeyboardAvoidingTemplate contentContainerStyle={styles.container}>
@@ -111,6 +126,8 @@ const PersonaValidation = () => {
                 .referenceId(userId)
                 .onComplete(() => {
                   dispatch(profileDetailsRequest());
+                  dispatch(updateOnboardingStatus('availability_setup'));
+                  navigate('AvailabilitySetup');
                 })
                 .onCanceled(() => {
                   dispatch(profileDetailsRequest());

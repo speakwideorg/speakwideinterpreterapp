@@ -338,9 +338,19 @@ const AuthSlice = createSlice({
       // just store flags
       const d = action.payload.data;
 
+      const isProfileDone =
+        d.isProfileCompleted ||
+        (Boolean(d.address) &&
+          Boolean(
+            d.ein ||
+              d.social_security_number ||
+              d.ein_last4 ||
+              d.ssn_last4,
+          ));
+
       if (d.isOnboardingComplete && d.isBankAccountAdded) {
         state.onBoardingStatus = 'completed';
-      } else if (!d.isProfileCompleted) {
+      } else if (!isProfileDone) {
         state.onBoardingStatus = 'profile_setup';
       } else if (
         d.personaVerifyStatus !== 'approved' &&

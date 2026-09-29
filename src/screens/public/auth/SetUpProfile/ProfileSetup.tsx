@@ -32,7 +32,8 @@ import DatePicker from 'react-native-date-picker';
 import moment from 'moment';
 import { showMessage } from '@app/utils/helpers/Toast';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { logoutRequest } from '@app/store/slice/auth.slice';
+import { logoutRequest, updateOnboardingStatus } from '@app/store/slice/auth.slice';
+import { navigate } from '@app/navigation/RootNaivgation';
 import ExpertisePicker, {
   expertiseInterface,
 } from '@app/components/template/ExpertisePicker';
@@ -59,11 +60,15 @@ type ProfileSetupProps = {
 };
 
 const ProfileSetup = () => {
+  const isFocused = useIsFocused();
   const dispatch = useAppDispatch();
   const { languageListResponse, areaOfExpertiseListResponse } = useAppSelector(
     state => state.default,
   );
   const { status, isLoading } = useAppSelector(state => state.user);
+  const personaVerifyStatus = useAppSelector(
+    state => state.auth.profileDetailsResponse?.personaVerifyStatus,
+  );
   const [info, setInfo] = useState<ProfileSetupProps>({
     street_address: '',
     ssn: '',
@@ -114,17 +119,29 @@ const ProfileSetup = () => {
   }>({ name: '', type: '', uri: '' });
 
   useEffect(() => {
-    switch (status) {
-      case 'user/profileSetupSuccess': {
-        dispatch(resetUserDefaults());
-        break;
-      }
-      case 'user/profileSetupFailure': {
-        dispatch(resetUserDefaults());
-        break;
+    if (isFocused) {
+      switch (status) {
+        case 'user/profileSetupSuccess': {
+          dispatch(resetUserDefaults());
+          if (
+            personaVerifyStatus === 'approved' ||
+            personaVerifyStatus === 'completed'
+          ) {
+            dispatch(updateOnboardingStatus('availability_setup'));
+            navigate('AvailabilitySetup');
+          } else {
+            dispatch(updateOnboardingStatus('persona_validate'));
+            navigate('PersonaValidation');
+          }
+          break;
+        }
+        case 'user/profileSetupFailure': {
+          dispatch(resetUserDefaults());
+          break;
+        }
       }
     }
-  }, [status]);
+  }, [status, isFocused, personaVerifyStatus, dispatch]);
 
   const updateValue = (field: keyof ProfileSetupProps, value: string) => {
     setInfo(prev => ({ ...prev, [field]: value }));

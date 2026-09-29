@@ -94,7 +94,7 @@ const Button: React.FC<ButtonProps> = props => {
 
   return (
     <Pressable
-      disabled={disabled}
+      disabled={disabled || isLoading}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={onPress}

@@ -22,6 +22,7 @@ import {
   resetUserDefaults,
   subscriptionDetailsRequest,
 } from '@app/store/slice/user.slice';
+import { subscriptionListRequest } from '@app/store/slice/default.slice';
 import SubscriptionPlanItem from './component/SubscriptionPlanItem';
 import AlertModal from '@app/components/common/AlertModal';
 import CancelSubscription from './model/CancelSubscription';
@@ -42,16 +43,42 @@ const SubscriptionDetails = () => {
     state => state.user.subscriptionDetailsResponse,
   );
 
-  console.log('subscriptionDetailsResponse', subscriptionDetailsResponse);
-  console.log('subscriptionListResponse', subscriptionListResponse);
   const { status, isLoading } = useAppSelector(state => state.user);
   const { profileDetailsResponse } = useAppSelector(state => state.auth);
   const [isCancelled, setIsCancelled] = useState(false);
 
-  const currentplan = subscriptionListResponse?.filter(
-    (itm: any) => itm?._id === subscriptionId,
-  )[0];
-  console.log('currentplan==>', currentplan);
+  useEffect(() => {
+    if (
+      isFocused &&
+      (!Array.isArray(subscriptionListResponse) ||
+        subscriptionListResponse.length === 0)
+    ) {
+      dispatch(subscriptionListRequest({}));
+    }
+  }, [isFocused]);
+
+  const activePlanDetails =
+    profileDetailsResponse?.subscriptionDetails?.planDetails;
+  const subscriptionList = Array.isArray(subscriptionListResponse)
+    ? subscriptionListResponse
+    : [];
+  const currentplan =
+    subscriptionList.find((itm: any) => itm?._id === subscriptionId) ||
+    (activePlanDetails
+      ? {
+          _id: activePlanDetails?._id || subscriptionId,
+          title: activePlanDetails?.title || 'Bronze',
+          price: activePlanDetails?.price ?? 0,
+          free_trial_in_days: 0,
+          plans: {
+            no_of_sessions: 5,
+            pay_frequency: { frequency: 2, interval: 'Monthly' },
+            priority_response: false,
+            allday_support: false,
+            isUnlimitedSession: false,
+          },
+        }
+      : null);
   useEffect(() => {
     if (status === 'user/cancelSubscriptionSuccess') {
       showMessage('Subscription cancelled successfully');
@@ -103,7 +130,7 @@ const SubscriptionDetails = () => {
         translucent
       />
       <View style={styles.v}>
-        <TouchableOpacity onPress={() => goBack()} style={styles.backContainer}>
+        <TouchableOpacity onPress={() => navigate('Settings')} style={styles.backContainer}>
           <Image source={Icons.arrow_right} style={styles.arrow_right} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
@@ -115,7 +142,7 @@ const SubscriptionDetails = () => {
         <Text style={styles.subTitle}>
           Choose the plan that's right for you
         </Text>
-        {profileDetailsResponse?.subscriptionDetails?.status === 'canceled' ? (
+        {profileDetailsResponse?.subscriptionDetails?.status === 'canceled' || !currentplan ? (
           <Text style={styles.noActivePlan}>No Active Plan</Text>
         ) : (
           <SubscriptionPlanItem

@@ -95,31 +95,34 @@ const PaymentSettings = () => {
   console.log('taxEligibilityResponse', taxEligibilityResponse);
 
   useEffect(() => {
-    if (isForeground && isFocused) {
-      dispatch(bankAccountListRequest({}));
-    }
-  }, [isForeground]);
-
-  useEffect(() => {
     if (isFocused) {
+      dispatch(cardListRequest({}));
+      dispatch(bankAccountListRequest({}));
       dispatch(taxEligibilityRequest({}));
     }
   }, [isFocused]);
+
+  useEffect(() => {
+    if (isForeground && isFocused) {
+      dispatch(cardListRequest({}));
+      dispatch(bankAccountListRequest({}));
+    }
+  }, [isForeground]);
 
   const [isAddCard, setIsAddCard] = useState(false);
   const [isDeleteModal, setIsDeleteModal] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string>('');
 
   const Cards = useMemo(() => {
-    const list = cardListsResponse || [];
+    const list = Array.isArray(cardListsResponse) ? cardListsResponse : [];
     return list.map((item: any) => ({
-      id: item.id,
-      name: item.billing_details?.name || 'Unknown',
-      number: `**** **** **** ${item.card?.last4}`,
-      valid: `${item.card?.exp_month?.toString().padStart(2, '0')}/${String(
-        item.card?.exp_year,
+      id: item?.id,
+      name: item?.billing_details?.name || 'Unknown',
+      number: `**** **** **** ${item?.card?.last4 || ''}`,
+      valid: `${item?.card?.exp_month?.toString().padStart(2, '0') || ''}/${String(
+        item?.card?.exp_year || '',
       ).slice(-2)}`,
-      brand: item.card?.brand,
+      brand: item?.card?.brand,
       isDefault: item?.isDefault,
     }));
   }, [cardListsResponse]);
@@ -323,10 +326,12 @@ const PaymentSettings = () => {
               source={Images.backgroundHeader}
               style={styles.backgroundHeader}
             />
-            {bankAccountListResponse?.length ? (
-              bankAccountListResponse?.map((card: any, index: number) => {
+            {Array.isArray(bankAccountListResponse) &&
+            bankAccountListResponse.length ? (
+              bankAccountListResponse.map((card: any, index: number) => {
                 return (
                   <RenderCard
+                    key={card?.id || index}
                     icon={Icons.icon_payment_card}
                     label={card?.bank_name + ' - ' + card?.last4}
                     borderBottomWidth={normalize(

@@ -26,6 +26,8 @@ import { useStripe } from '@stripe/stripe-react-native';
 import {
   cardListRequest,
   createPaymentRequest,
+  resetUserDefaults,
+  subscribeFreePlanRequest,
 } from '@app/store/slice/user.slice';
 import SubscriptionPlanItem, {
   SubscriptionPlanInterface,
@@ -100,38 +102,43 @@ const UpgradeSubscriptionDetails: FC<
   const subscriptionList = useAppSelector(
     state => state.default.subscriptionListResponse,
   );
-  const item = subscriptionList?.find(
-    (subs: SubscriptionPlanInterface) => subs?._id === planId,
-  );
+  const item = Array.isArray(subscriptionList)
+    ? subscriptionList.find(
+        (subs: SubscriptionPlanInterface) => subs?._id === planId,
+      )
+    : undefined;
+  const isFree =
+    item?.price === 0 || item?.title?.trim()?.toLowerCase() === 'bronze';
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (isFocused) {
+    if (isFocused && !isFree) {
       dispatch(cardListRequest({}));
     }
-  }, [isFocused]);
+  }, [isFocused, isFree]);
 
   const handleConfirmPayment = async () => {
     try {
       const clientSecret = createPaymentResponse?.client_secret;
       if (clientSecret === null) {
-        setTimeout(() => {
-          dispatch(profileDetailsRequest());
-          navigate('Success', {
-            type: 'UpgradeSubscription',
-            title: 'Subscription ',
-            title1: 'Upgraded Successfully',
-          });
-        }, 2000);
+        setIsProcessing(false);
+        navigate('Success', {
+          type: 'UpgradeSubscription',
+          title: 'Subscription ',
+          title1: 'Upgraded Successfully',
+        });
         return;
       }
       if (!clientSecret) {
+        setIsProcessing(false);
         showMessage('Missing payment client secret');
         return;
       }
 
       const result = await confirmPayment(clientSecret);
+      setIsProcessing(false);
 
       if (result.error) {
         const {
@@ -160,40 +167,56 @@ const UpgradeSubscriptionDetails: FC<
 
       if (result.paymentIntent) {
         showMessage('Payment successful!');
-        setTimeout(() => {
-          dispatch(profileDetailsRequest());
-          navigate('Success', {
-            type: 'UpgradeSubscription',
-            title: 'Subscription ',
-            title1: 'Upgraded Successfully',
-          });
-        }, 2000);
+        navigate('Success', {
+          type: 'UpgradeSubscription',
+          title: 'Subscription ',
+          title1: 'Upgraded Successfully',
+        });
       }
     } catch (error: any) {
+      setIsProcessing(false);
       showMessage(error?.message || 'Unexpected payment error occurred');
     }
   };
 
   useEffect(() => {
     if (isFocused) {
-      switch (status) {
-        case 'user/createPaymentSuccess': {
-          handleConfirmPayment();
-          break;
-        }
-        case 'user/createPaymentFailure': {
-          break;
-        }
+      if (status === 'user/subscribeFreePlanSuccess') {
+        setIsProcessing(false);
+        dispatch(resetUserDefaults());
+        navigate('Success', {
+          type: 'UpgradeSubscription',
+          title: 'Subscription ',
+          title1: 'Confirmed!',
+        });
+      } else if (status === 'user/createPaymentSuccess') {
+        dispatch(resetUserDefaults());
+        handleConfirmPayment();
+      } else if (
+        status === 'user/createPaymentFailure' ||
+        status === 'user/subscribeFreePlanFailure'
+      ) {
+        setIsProcessing(false);
+        dispatch(resetUserDefaults());
       }
     }
   }, [status, isFocused]);
 
   const handlePayment = async () => {
+    if (isProcessing || isLoading) {
+      return;
+    }
+    if (isFree) {
+      setIsProcessing(true);
+      dispatch(subscribeFreePlanRequest({ planId: item?._id }));
+      return;
+    }
     if (!selectedCardId) {
       showMessage('Please Select a Card');
       return;
     }
 
+    setIsProcessing(true);
     dispatch(
       createPaymentRequest({
         priceId: item?.stripePriceId,
@@ -210,7 +233,7 @@ const UpgradeSubscriptionDetails: FC<
         barStyle={'dark-content'}
         translucent
       />
-      <Loader visible={isLoading} />
+      <Loader visible={isLoading || isProcessing} />
       <View style={styles.v}>
         <TouchableOpacity onPress={() => goBack()} style={styles.backContainer}>
           <Image source={Icons.arrow_right} style={styles.arrow_right} />
@@ -232,40 +255,47 @@ const UpgradeSubscriptionDetails: FC<
           key={item?._id?.toString()}
           index={item?._id}
           item={item}
-          marginRight={normalize(10)}
-          marginBottom={normalize(12)}
+          marginRight={0}
+          marginBottom={normalize(14)}
           isHideButton={true}
         />
 
         <View style={[Css.w100, Css.pl9, Css.pr9]}>
-          <Text style={styles.paymentMethodTitle}>Payment Methods</Text>
-          {cardListsResponse?.map((method: any, index: number) => {
-            const { card, id } = method;
-            const brand = card?.brand?.toLowerCase() || 'default';
-            const maskedLabel = `${
-              card.display_brand?.toUpperCase() || brand
-            } •••• ${card.last4}`;
-            return (
-              <RenderCard
-                key={id}
-                label={maskedLabel}
-                borderBottomWidth={
-                  index === cardListsResponse?.length - 1 ? 0 : 1
-                }
-                isPrimary={index === 0}
-                isSelected={selectedCardId === id}
-                onPress={() =>
-                  setSelectedCardId(prev => (prev === id ? null : id))
-                }
-              />
-            );
-          })}
+          {!isFree && (
+            <>
+              <Text style={styles.paymentMethodTitle}>Payment Methods</Text>
+              {Array.isArray(cardListsResponse) &&
+                cardListsResponse.map((method: any, index: number) => {
+                  const { card, id } = method || {};
+                  if (!card) return null;
+                  const brand = card?.brand?.toLowerCase() || 'default';
+                  const maskedLabel = `${
+                    card?.display_brand?.toUpperCase() || brand
+                  } •••• ${card?.last4 || ''}`;
+                  return (
+                    <RenderCard
+                      key={id}
+                      label={maskedLabel}
+                      borderBottomWidth={
+                        index === cardListsResponse.length - 1 ? 0 : 1
+                      }
+                      isPrimary={index === 0}
+                      isSelected={selectedCardId === id}
+                      onPress={() =>
+                        setSelectedCardId(prev => (prev === id ? null : id))
+                      }
+                    />
+                  );
+                })}
+            </>
+          )}
 
           <Button
             onPress={handlePayment}
-            title={'Confirm Plan'}
+            title={isFree ? 'Confirm Free Plan' : 'Confirm Plan'}
             width={'100%'}
             marginTop={normalize(5)}
+            disabled={isProcessing || isLoading}
           />
         </View>
       </ScrollView>

@@ -60,11 +60,20 @@ const Success: FC<Props> = ({ route }) => {
     Logout: () => reset(0, 'Login'),
     SubscriptionSuccess: () => dispatch(profileDetailsRequest()),
     AddNewPaymentCard: () => goBack(),
-    UpgradeSubscription: () => navigation.dispatch(StackActions.pop(4)),
+    UpgradeSubscription: () => {
+      dispatch(profileDetailsRequest());
+      (navigation as any).navigate('Settings');
+    },
     DetailsSessionDeclined: () => reset(0, 'Dashboard'),
     DetailsSessionAccepted: () => reset(0, 'Dashboard'),
     RaiseDispute: () => reset(0, 'Dashboard'),
   };
+
+  React.useEffect(() => {
+    if (type === 'UpgradeSubscription' || type === 'SubscriptionSuccess') {
+      dispatch(profileDetailsRequest());
+    }
+  }, [type, dispatch]);
 
   const { bgImage, textColor, marginTopTitle, buttonLabel } = useMemo(() => {
     const isCancelled =

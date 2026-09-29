@@ -56,7 +56,15 @@ const store = configureStore({
     getDefaultMiddleware({
       thunk: false,
       serializableCheck: {
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredActions: [
+          FLUSH,
+          REHYDRATE,
+          PAUSE,
+          PERSIST,
+          PURGE,
+          REGISTER,
+          'user/profileSetupRequest',
+        ],
         ignoredPaths: ['register', 'rehydrate'],
       },
     }).concat(logger, sagaMiddleware),

@@ -18,7 +18,10 @@ import moment from 'moment';
 import DatePicker from 'react-native-date-picker';
 import AvailabilitySelectedComponent from '@app/screens/default/model/AvailabilitySelectedComponent';
 import { useAppDispatch, useAppSelector } from '@app/store';
-import { logoutRequest } from '@app/store/slice/auth.slice';
+import {
+  logoutRequest,
+  updateOnboardingStatus,
+} from '@app/store/slice/auth.slice';
 import { showMessage } from '@app/utils/helpers/Toast';
 import { useIsFocused } from '@react-navigation/native';
 import ExitAppModal from '@app/components/template/ExitPopup';
@@ -26,6 +29,7 @@ import {
   resetUserDefaults,
   setupAvailibilityRequest,
 } from '@app/store/slice/user.slice';
+import { navigate } from '@app/navigation/RootNaivgation';
 
 type AvailabilitySlot = {
   startTime: string;
@@ -132,6 +136,8 @@ const AvailabilitySetup = () => {
       switch (status) {
         case 'user/setupAvailibilitySuccess': {
           dispatch(resetUserDefaults());
+          dispatch(updateOnboardingStatus('add_payment_card'));
+          navigate('AddPaymentCard');
           break;
         }
         case 'user/setupAvailibilityFailure': {

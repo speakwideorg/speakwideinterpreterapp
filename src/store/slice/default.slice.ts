@@ -23,11 +23,11 @@ const initialState: initialStateInterface = {
   message: '',
   isLoading: false,
   /////////////////////// responses
-  areaOfExpertiseListResponse: {},
-  languageListResponse: {},
-  businessAreaListResponse: {},
-  subscriptionListResponse: {},
-  pricingListResponse: {},
+  areaOfExpertiseListResponse: [],
+  languageListResponse: [],
+  businessAreaListResponse: [],
+  subscriptionListResponse: [],
+  pricingListResponse: [],
   cmsDetailsResponse: {},
 };
 

@@ -23,6 +23,8 @@ type SuccessScreenProps = {
   | 'ChangePassword'
   | 'SubscriptionCancel'
   | 'SubscriptionSuccess'
+  | 'UpgradeSubscription'
+  | 'AddNewPaymentCard'
   | 'RaiseDispute'
   | 'Logout'
   | 'ProfileSave';
@@ -109,9 +111,9 @@ export type ChatHistoryStackParamList = {
 };
 
 export type RaiseDisputeStackParamList = {
-  RaiseDispute: {
+  RaiseDispute?: {
     item: any;
-  }
+  };
   Dispute: {
     item: any;
   };
@@ -162,8 +164,8 @@ export type RootDrawerParamList = {
   SessionHistory: undefined;
   Calendar: undefined;
   ChatHistory: undefined;
-  RaiseDispute: {
-    item: any
+  RaiseDispute?: {
+    item: any;
   };
   // DisputeManagement?: undefined;
   EarningsPayout: undefined;

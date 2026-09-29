@@ -29,6 +29,7 @@ interface initialStateInterface {
   updateBankStatusResponse: any;
   subscriptionDetailsResponse: any;
   cancelSubscriptionResponse?: any;
+  subscribeFreePlanResponse?: any;
 }
 
 const initialState: initialStateInterface = {
@@ -39,7 +40,7 @@ const initialState: initialStateInterface = {
   userId: '',
   /////////////////////// responses
   changePasswordResponse: {},
-  cardListsResponse: {},
+  cardListsResponse: [],
   createPaymentResponse: {},
   addBankAccountResponse: {},
   addCardResponse: {},
@@ -47,10 +48,11 @@ const initialState: initialStateInterface = {
   paymentMethodResponse: {},
   profileSetupResponse: {},
   setUpAvailibilityResponse: {},
-  bankAccountListResponse: {},
+  bankAccountListResponse: [],
   updateBankStatusResponse: {},
   subscriptionDetailsResponse: {},
   cancelSubscriptionResponse: {},
+  subscribeFreePlanResponse: {},
 };
 
 const UserSlice = createSlice({
@@ -119,12 +121,16 @@ const UserSlice = createSlice({
     cardListSuccess(state, action: payload_interface) {
       state.isLoading = false;
       state.status = action.type;
-      state.cardListsResponse = action?.payload?.data?.data;
+      state.cardListsResponse = Array.isArray(action?.payload?.data?.data)
+        ? action?.payload?.data?.data
+        : [];
     },
     cardListFailure(state, action: payload_interface) {
       state.isLoading = false;
       state.status = action.type;
-      state.cardListsResponse = action?.payload?.data?.data;
+      state.cardListsResponse = Array.isArray(action?.payload?.data?.data)
+        ? action?.payload?.data?.data
+        : [];
     },
 
     ////////////////////  create payment
@@ -218,12 +224,16 @@ const UserSlice = createSlice({
     bankAccountListSuccess(state, action: payload_interface) {
       state.isLoading = false;
       state.status = action.type;
-      state.bankAccountListResponse = action?.payload?.data;
+      state.bankAccountListResponse = Array.isArray(action?.payload?.data)
+        ? action?.payload?.data
+        : [];
     },
     bankAccountListFailure(state, action: payload_interface) {
       state.isLoading = false;
       state.status = action.type;
-      state.bankAccountListResponse = action?.payload?.data;
+      state.bankAccountListResponse = Array.isArray(action?.payload?.data)
+        ? action?.payload?.data
+        : [];
     },
 
     //////////////////// add card
@@ -272,6 +282,22 @@ const UserSlice = createSlice({
       state.isLoading = false;
       state.status = action.type;
       state.cancelSubscriptionResponse = action?.payload?.data;
+    },
+
+    /////////////////////// subscribe free plan
+    subscribeFreePlanRequest(state, action) {
+      state.isLoading = true;
+      state.status = action.type;
+    },
+    subscribeFreePlanSuccess(state, action: payload_interface) {
+      state.isLoading = false;
+      state.status = action.type;
+      state.subscribeFreePlanResponse = action?.payload?.data;
+    },
+    subscribeFreePlanFailure(state, action: payload_interface) {
+      state.isLoading = false;
+      state.status = action.type;
+      state.subscribeFreePlanResponse = action?.payload?.data;
     },
   },
 });
@@ -332,6 +358,11 @@ export const {
   cancelSubscriptionRequest,
   cancelSubscriptionSuccess,
   cancelSubscriptionFailure,
+
+  // subscribe free plan
+  subscribeFreePlanRequest,
+  subscribeFreePlanSuccess,
+  subscribeFreePlanFailure,
 } = UserSlice.actions;
 
 export default UserSlice.reducer;

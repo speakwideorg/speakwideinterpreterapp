@@ -22,6 +22,8 @@ import { useAppDispatch, useAppSelector } from '@app/store';
 import { useIsFocused } from '@react-navigation/native';
 import { subscriptionListRequest } from '@app/store/slice/default.slice';
 import { navigate } from '@app/navigation/RootNaivgation';
+import Loader from '@app/utils/helpers/Loader';
+import { resetUserDefaults } from '@app/store/slice/user.slice';
 
 const SubscriptionSetUp = () => {
   const isFocused = useIsFocused();
@@ -29,6 +31,7 @@ const SubscriptionSetUp = () => {
   const subscriptionList = useAppSelector(
     state => state.default.subscriptionListResponse,
   );
+  const { status, isLoading } = useAppSelector(state => state.user);
 
   useEffect(() => {
     if (isFocused) {
@@ -36,10 +39,18 @@ const SubscriptionSetUp = () => {
     }
   }, [dispatch, isFocused]);
 
+  useEffect(() => {
+    if (isFocused && status === 'user/subscribeFreePlanSuccess') {
+      dispatch(resetUserDefaults());
+      navigate('AddBankAccount');
+    }
+  }, [status, isFocused, dispatch]);
+
   const [visible, setVisible] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
+      <Loader visible={isLoading} />
       <Image source={Images.shape} style={styles.shape} />
       {isIos() && (
         <MyStatusBar
@@ -63,8 +74,8 @@ const SubscriptionSetUp = () => {
         </View>
 
         <View style={[Css.asc, Css.mt9]}>
-          {subscriptionList && subscriptionList?.length > 0
-            ? subscriptionList?.map((item: any, index: number) => {
+          {Array.isArray(subscriptionList) && subscriptionList.length > 0
+            ? subscriptionList.map((item: any, index: number) => {
                 return (
                   <SubscriptionPlanItem
                     index={index}

@@ -7,7 +7,6 @@ import {
   View,
   Pressable,
 } from 'react-native';
-import { BlurView } from '@react-native-community/blur';
 import { normalize } from '@app/utils/orientation';
 import { Colors, Icons } from '@app/themes';
 import { hexToRGB } from '@app/utils/helpers';
@@ -32,12 +31,6 @@ const Picker: React.FC<PickerModalProps> = ({
 }) => {
   return (
     <Modal visible={visible} transparent animationType="slide">
-      {/* Blur Background */}
-      <BlurView
-        style={StyleSheet.absoluteFill}
-        blurType="light"
-        blurAmount={4}
-      />
       <Pressable
         onPress={() => {
           if (onBackDropPess) {

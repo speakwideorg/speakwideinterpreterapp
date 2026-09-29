@@ -29,6 +29,8 @@ import {
   subscriptionDetailsSuccess,
   updateBankStatusFailure,
   updateBankStatusSuccess,
+  subscribeFreePlanFailure,
+  subscribeFreePlanSuccess,
 } from '../slice/user.slice';
 import { cardListFailure, cardListSuccess } from '../slice/user.slice';
 import { profileDetailsRequest } from '../slice/auth.slice';
@@ -294,6 +296,27 @@ function* handleCancelSubscriptionDetails() {
   }
 }
 
+function* handleSubscribeFreePlan(action: any) {
+  try {
+    const result: AxiosResponse<any> = yield call(
+      instance.post,
+      API.user.subscribe_free_plan,
+      action.payload,
+    );
+
+    if (result?.status === 200 || result?.data?.status === 200) {
+      yield put(subscribeFreePlanSuccess(result?.data));
+      yield put(profileDetailsRequest());
+    } else {
+      yield put(subscribeFreePlanFailure(result?.data));
+    }
+    showMessage(result?.data?.message || 'Free plan activated successfully!');
+  } catch (error: any) {
+    showMessage(error?.response?.data?.message || 'Failed to activate free plan');
+    yield put(subscribeFreePlanFailure(error?.response?.data));
+  }
+}
+
 function* userSaga() {
   yield takeLatest('user/changePasswordRequest', handleChangePassword);
   yield takeLatest('user/cardListRequest', handleCardLists);
@@ -311,6 +334,7 @@ function* userSaga() {
     handleGetSubscriptionDetails,
   );
   yield takeLatest('user/cancelSubscriptionRequest', handleCancelSubscriptionDetails);
+  yield takeLatest('user/subscribeFreePlanRequest', handleSubscribeFreePlan);
 }
 
 export default userSaga;

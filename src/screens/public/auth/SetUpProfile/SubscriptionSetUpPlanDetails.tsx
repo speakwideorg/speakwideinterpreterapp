@@ -16,7 +16,7 @@ import MyStatusBar from '@app/utils/helpers/MyStatusBar';
 import { normalize } from '@app/utils/orientation';
 import { isIos } from '@app/utils/helpers/Validation';
 import Button from '@app/components/common/Button';
-import { goBack } from '@app/navigation/RootNaivgation';
+import { goBack, navigate } from '@app/navigation/RootNaivgation';
 import SubscriptionPlanItem, {
   SubscriptionPlanInterface,
 } from './SubscriptionPlanItem';
@@ -29,6 +29,8 @@ import { useStripe } from '@stripe/stripe-react-native';
 import {
   cardListRequest,
   createPaymentRequest,
+  resetUserDefaults,
+  subscribeFreePlanRequest,
 } from '@app/store/slice/user.slice';
 import Loader from '@app/utils/helpers/Loader';
 
@@ -100,18 +102,22 @@ const SubscriptionPlanDetails: FC<
   const subscriptionList = useAppSelector(
     state => state.default.subscriptionListResponse,
   );
-  const item = subscriptionList?.find(
-    (subs: SubscriptionPlanInterface) => subs?._id === planId,
-  );
+  const item = Array.isArray(subscriptionList)
+    ? subscriptionList.find(
+        (subs: SubscriptionPlanInterface) => subs?._id === planId,
+      )
+    : undefined;
+  const isFree =
+    item?.price === 0 || item?.title?.trim()?.toLowerCase() === 'bronze';
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isDisabled, setIsDisabled] = useState(false);
 
   useEffect(() => {
-    if (isFocused) {
+    if (isFocused && !isFree) {
       dispatch(cardListRequest({}));
     }
-  }, [isFocused]);
+  }, [isFocused, isFree]);
 
   const handleConfirmPayment = async () => {
     try {
@@ -167,19 +173,27 @@ const SubscriptionPlanDetails: FC<
 
   useEffect(() => {
     if (isFocused) {
-      switch (status) {
-        case 'user/createPaymentSuccess': {
-          handleConfirmPayment();
-          break;
-        }
-        case 'user/createPaymentFailure': {
-          break;
-        }
+      if (status === 'user/subscribeFreePlanSuccess') {
+        setIsDisabled(false);
+        dispatch(resetUserDefaults());
+        navigate('AddBankAccount');
+      } else if (status === 'user/subscribeFreePlanFailure') {
+        setIsDisabled(false);
+      } else if (status === 'user/createPaymentSuccess') {
+        dispatch(resetUserDefaults());
+        handleConfirmPayment();
+      } else if (status === 'user/createPaymentFailure') {
+        setIsDisabled(false);
       }
     }
   }, [status, isFocused]);
 
   const handlePayment = async () => {
+    if (isFree) {
+      setIsDisabled(true);
+      dispatch(subscribeFreePlanRequest({ planId: item?._id }));
+      return;
+    }
     if (!selectedCardId) {
       showMessage('Please Select a Card');
       return;
@@ -224,38 +238,44 @@ const SubscriptionPlanDetails: FC<
           key={item?._id?.toString()}
           index={item?._id}
           item={item}
-          marginRight={normalize(10)}
-          marginBottom={normalize(12)}
+          marginRight={0}
+          marginBottom={normalize(14)}
           isHideButton={true}
         />
 
         <View style={[Css.w100, Css.pl9, Css.pr9]}>
-          <Text style={styles.paymentMethodTitle}>Payment Methods</Text>
-          {cardListsResponse?.map((method: any, index: number) => {
-            const { card, id } = method;
-            const brand = card?.brand?.toLowerCase() || 'default';
-            const maskedLabel = `${
-              card.display_brand?.toUpperCase() || brand
-            } •••• ${card.last4}`;
-            return (
-              <RenderCard
-                key={id}
-                label={maskedLabel}
-                borderBottomWidth={
-                  index === cardListsResponse?.length - 1 ? 0 : 1
-                }
-                isPrimary={index === 0}
-                isSelected={selectedCardId === id}
-                onPress={() =>
-                  setSelectedCardId(prev => (prev === id ? null : id))
-                }
-              />
-            );
-          })}
+          {!isFree && (
+            <>
+              <Text style={styles.paymentMethodTitle}>Payment Methods</Text>
+              {Array.isArray(cardListsResponse) &&
+                cardListsResponse.map((method: any, index: number) => {
+                  const { card, id } = method || {};
+                  if (!card) return null;
+                  const brand = card?.brand?.toLowerCase() || 'default';
+                  const maskedLabel = `${
+                    card?.display_brand?.toUpperCase() || brand
+                  } •••• ${card?.last4 || ''}`;
+                  return (
+                    <RenderCard
+                      key={id}
+                      label={maskedLabel}
+                      borderBottomWidth={
+                        index === cardListsResponse.length - 1 ? 0 : 1
+                      }
+                      isPrimary={index === 0}
+                      isSelected={selectedCardId === id}
+                      onPress={() =>
+                        setSelectedCardId(prev => (prev === id ? null : id))
+                      }
+                    />
+                  );
+                })}
+            </>
+          )}
 
           <Button
             onPress={handlePayment}
-            title={'Confirm Plan'}
+            title={isFree ? 'Confirm Free Plan' : 'Confirm Plan'}
             width={'100%'}
             marginTop={normalize(5)}
             disabled={isDisabled}

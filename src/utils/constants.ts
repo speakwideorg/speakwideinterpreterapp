@@ -64,6 +64,7 @@ export const API = {
     subscription_details: '/user/subscriptionDetails/',
     cancel_subscription: '/subscription/cancel',
     delete_certificate_document: '/interpreter/document-delete',
+    subscribe_free_plan: '/interpreter/subscribeFreePlan',
   },
   session: {
     getToken: '/session/getToken/',
