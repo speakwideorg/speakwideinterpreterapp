@@ -1,11 +1,20 @@
 import { DropDownOption } from '@app/components/common/DropDown';
 import { Images } from '@app/themes';
 import { ChatItem, DisputeStatus, SubscriptionPlan } from '@app/types';
-import { BASE_URL, BASE_URL_LIVE, CDN_URL } from '@env';
+import {
+  BASE_URL,
+  BASE_URL_LIVE,
+  CDN_URL,
+  RECAPTCHA_SITE_KEY,
+  RECAPTCHA_V2_SITE_KEY,
+  RECAPTCHA_V2_PAGE_URL,
+  NEXT_PUBLIC_RECAPTCHA_SITE_KEY,
+  NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY,
+} from '@env';
 
 // const base_url = BASE_URL;
-const base_url = BASE_URL_LIVE;
-// const base_url = 'http://192.168.5.212:1892';
+// const base_url = BASE_URL_LIVE;
+const base_url = 'http://192.168.6.139:1892';
 // const base_url = 'https://c48f48cace81.ngrok-free.app';
 
 // console.log("base url==>", base_url)
@@ -14,6 +23,15 @@ export const URL_LIST = {
   base_url: base_url,
   api_base_url: base_url + '/api',
   bucket_url: CDN_URL,
+};
+
+// Testing keys (commented out):
+// v3 testing site key: '6Lff9-wtAAAAABkn9azFVW1qnIz2mjTdoIqAm1w9'
+// v2 testing site key: '6LeN5OwtAAAAAPXRz0mWUjxpT4TXNHYYpEz7lRWO'
+export const RECAPTCHA_CONFIG = {
+  v3_site_key: RECAPTCHA_SITE_KEY || NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LcGYe0tAAAAAA0lMUnQCOhSqZpDxfYnXZBLW6ec',
+  v2_site_key: RECAPTCHA_V2_SITE_KEY || NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || '6LebY-0tAAAAAHGGaHe8WMSnvlhEaD7erHW4cSGj',
+  v2_page_url: RECAPTCHA_V2_PAGE_URL || 'https://speakwide.com/captcha/mobile/',
 };
 
 // export const BUCKET_IMAGE_URL = {

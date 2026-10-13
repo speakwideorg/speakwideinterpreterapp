@@ -18,8 +18,20 @@ import {
   REGISTER,
 } from 'redux-persist';
 import Storage from '@app/utils/storage';
-import { logger } from 'redux-logger';
+import { createLogger } from 'redux-logger';
 import rootSaga from './service/rootSaga';
+
+const customLogger = createLogger({
+  actionTransformer: action => {
+    if (action.payload && typeof action.payload === 'object') {
+      const sanitized = { ...action.payload };
+      if ('password' in sanitized) sanitized.password = '***';
+      if ('confirm_password' in sanitized) sanitized.confirm_password = '***';
+      return { ...action, payload: sanitized };
+    }
+    return action;
+  },
+});
 
 const createSagaMiddleware = require('redux-saga');
 
@@ -67,7 +79,7 @@ const store = configureStore({
         ],
         ignoredPaths: ['register', 'rehydrate'],
       },
-    }).concat(logger, sagaMiddleware),
+    }).concat(customLogger, sagaMiddleware),
 });
 
 sagaMiddleware.run(rootSaga);

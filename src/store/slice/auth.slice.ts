@@ -28,6 +28,8 @@ interface initialStateInterface {
   device_token: string;
   /////////////////////// responses
   createAccountResponse: any;
+  v2Required: boolean;
+  rateLimitCooldown: number;
   signinResponse: any;
   refreshTokenResponse: any;
   logoutResponse: any;
@@ -52,6 +54,8 @@ const initialState: initialStateInterface = {
   device_token: '',
   /////////////////////// responses
   createAccountResponse: {},
+  v2Required: false,
+  rateLimitCooldown: 0,
   signinResponse: {},
   refreshTokenResponse: {},
   logoutResponse: {},
@@ -98,12 +102,15 @@ const AuthSlice = createSlice({
           timeZone: string;
           deviceToken: string;
           deviceType: string;
+          recaptchaToken?: string;
+          recaptchaVersion?: 'v3' | 'v2';
         };
         type: string;
       },
     ) {
       state.isLoading = true;
       state.status = action.type;
+      state.v2Required = false;
     },
     createAccountSuccess(state, action: payload_interface) {
       state.isLoading = false;
@@ -119,6 +126,25 @@ const AuthSlice = createSlice({
       state.isLoading = false;
       state.status = action.type;
       state.createAccountResponse = action?.payload?.data;
+    },
+    createAccountV2Required(state, action: { payload?: any; type: string }) {
+      state.isLoading = false;
+      state.status = action.type;
+      state.v2Required = true;
+    },
+    resetV2Required(state) {
+      state.v2Required = false;
+    },
+    createAccountRateLimited(
+      state,
+      action: { payload: { retryAfter: number; data?: any }; type: string },
+    ) {
+      state.isLoading = false;
+      state.status = action.type;
+      state.rateLimitCooldown = action.payload.retryAfter;
+    },
+    resetRateLimitCooldown(state) {
+      state.rateLimitCooldown = 0;
     },
 
     //////////////////// sign in
@@ -424,6 +450,10 @@ export const {
   createAccountRequest,
   createAccountSuccess,
   createAccountFailure,
+  createAccountV2Required,
+  resetV2Required,
+  createAccountRateLimited,
+  resetRateLimitCooldown,
 
   signInRequest,
   signInSuccess,

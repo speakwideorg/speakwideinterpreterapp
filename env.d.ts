@@ -13,6 +13,12 @@ declare module '@env' {
   export const STRIPE_SECRET_KEY_LIVE: string;
   export const PERSONA_KEY_LIVE: string;
   export const RECAPTCHA_SITE_KEY: string;
+  export const RECAPTCHA_SECRET_KEY: string;
+  export const RECAPTCHA_V2_SITE_KEY: string;
+  export const RECAPTCHA_V2_SECRET_KEY: string;
+  export const RECAPTCHA_V2_PAGE_URL: string;
+  export const NEXT_PUBLIC_RECAPTCHA_SITE_KEY: string;
+  export const NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY: string;
   export const FIREBASE_PROJECT_NUMBER: string;
   export const FIREBASE_PROJECT_ID: string;
   export const FIREBASE_STORAGE_BUCKET: string;

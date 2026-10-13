@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Platform } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
@@ -15,16 +15,33 @@ export const CaptchaWebView: React.FC<CaptchaWebViewProps> = ({
   onSuccess,
   onError,
 }) => {
+  const hasSettledRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    // Bound token generation to 10 seconds (per website specification)
+    const timeoutTimer = setTimeout(() => {
+      if (!hasSettledRef.current) {
+        hasSettledRef.current = true;
+        onError('V3_TIMEOUT');
+      }
+    }, 10000);
+
+    return () => {
+      clearTimeout(timeoutTimer);
+    };
+  }, [onError]);
+
   let formattedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   if (formattedBaseUrl.includes('admin.speakwide.com')) {
     formattedBaseUrl = 'https://speakwide.com/';
   }
 
-  const userAgent = Platform.OS === 'ios'
-    ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
-    : 'Mozilla/5.0 (Linux; Android 13; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
+  const userAgent =
+    Platform.OS === 'ios'
+      ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
+      : 'Mozilla/5.0 (Linux; Android 13; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
 
-  // HTML Content to render reCAPTCHA v3 inside WebView
+  // HTML Content to render reCAPTCHA v3 inside WebView with interpreter_signup action
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -40,7 +57,7 @@ export const CaptchaWebView: React.FC<CaptchaWebViewProps> = ({
               return;
             }
             window.grecaptcha.ready(function() {
-              window.grecaptcha.execute('${siteKey}', { action: 'signup' })
+              window.grecaptcha.execute('${siteKey}', { action: 'interpreter_signup' })
                 .then(function(token) {
                   if (window.ReactNativeWebView) {
                     window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SUCCESS', token: token }));
@@ -63,6 +80,12 @@ export const CaptchaWebView: React.FC<CaptchaWebViewProps> = ({
   `;
 
   const handleMessage = (event: WebViewMessageEvent) => {
+    // Ignore late callbacks if 10-second bound has expired or already settled
+    if (hasSettledRef.current) {
+      return;
+    }
+    hasSettledRef.current = true;
+
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'SUCCESS' && data.token) {

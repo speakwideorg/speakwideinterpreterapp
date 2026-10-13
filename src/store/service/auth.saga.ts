@@ -1,10 +1,12 @@
 import { instance } from '@app/utils/server/instance';
 import { AxiosResponse } from 'axios';
-import { call, put, takeLatest } from 'redux-saga/effects';
+import { call, put, takeLatest, takeLeading } from 'redux-saga/effects';
 import { API } from '@app/utils/constants';
 import {
   createAccountFailure,
   createAccountSuccess,
+  createAccountV2Required,
+  createAccountRateLimited,
   deleteAccountFailure,
   deleteAccountSuccess,
   deleteDocumentFailure,
@@ -46,13 +48,57 @@ function* handleCreateAccount(action: any) {
     if (result?.status === 200) {
       yield put(createAccountSuccess(result?.data));
       yield put(profileDetailsRequest());
+      if (result?.data?.message) {
+        showMessage(result?.data?.message);
+      }
     } else {
       yield put(createAccountFailure(result?.data));
+      if (result?.data?.message) {
+        showMessage(result?.data?.message);
+      }
     }
-    showMessage(result?.data?.message);
   } catch (error: any) {
-    yield put(createAccountFailure(error?.response?.data));
-    showMessage(error?.response?.data?.message);
+    const status = error?.response?.status;
+    const responseData = error?.response?.data;
+
+    // HTTP 403 with code RECAPTCHA_V2_REQUIRED (matching website isCaptchaChallenge)
+    // Suppress failure toast and signal that v2 checkbox is required
+    if (
+      status === 403 &&
+      (responseData?.code === 'RECAPTCHA_V2_REQUIRED' ||
+        responseData?.requiresRecaptchaV2)
+    ) {
+      yield put(createAccountV2Required(responseData));
+      return;
+    }
+
+    // HTTP 429 Rate Limit (matching website retryAfterSeconds)
+    if (status === 429) {
+      const retryAfterHeader = error?.response?.headers?.['retry-after'];
+      const retryAfterSeconds =
+        parseInt(retryAfterHeader, 10) || responseData?.retryAfter || 60;
+      yield put(
+        createAccountRateLimited({
+          retryAfter: retryAfterSeconds,
+          data: responseData,
+        }),
+      );
+      showMessage(
+        responseData?.message ||
+          `Too many attempts. Please try again in ${retryAfterSeconds} seconds.`,
+      );
+      return;
+    }
+
+    // Ordinary registration error (validation, duplicate email, etc.)
+    yield put(
+      createAccountFailure(responseData || { message: error?.message }),
+    );
+    if (responseData?.message) {
+      showMessage(responseData?.message);
+    } else if (error?.message) {
+      showMessage(error.message);
+    }
   }
 }
 
@@ -329,7 +375,7 @@ function* handleDeleteDocumentRequest(action: any) {
 }
 
 function* authSaga() {
-  yield takeLatest('auth/createAccountRequest', handleCreateAccount);
+  yield takeLeading('auth/createAccountRequest', handleCreateAccount);
   yield takeLatest('auth/signInRequest', handleSignIn);
   yield takeLatest('auth/deleteAccountRequest', handleDeleteAccountRequest);
   yield takeLatest('auth/refreshTokenRequest', handleRefreshToken);
