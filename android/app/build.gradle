@@ -26,6 +26,26 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def envFile = file("${rootDir}/../.env")
+def envVars = [:]
+if (envFile.exists()) {
+    envFile.readLines().each { line ->
+        def trimmed = line.trim()
+        if (trimmed && !trimmed.startsWith("#")) {
+            def parts = trimmed.split("=", 2)
+            if (parts.length == 2) {
+                def k = parts[0].trim()
+                def v = parts[1].trim()
+                if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+                    v = v.substring(1, v.length() - 1)
+                }
+                envVars.put(k, v)
+            }
+        }
+    }
+}
+def googleMapsApiKey = System.getenv("GOOGLE_MAPS_API_KEY") ?: envVars.get("GOOGLE_MAPS_API_KEY", "")
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -38,6 +58,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 14
         versionName "1.7"
+        manifestPlaceholders = [
+            GOOGLE_MAPS_API_KEY: googleMapsApiKey
+        ]
     }
     signingConfigs {
         debug {

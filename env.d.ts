@@ -7,6 +7,7 @@ declare module '@env' {
   export const VONAGE_API_KEY: string;
   export const STRIPE_PUBLISH_KEY: string;
   export const STRIPE_SECRET_KEY: string;
+  export const GOOGLE_MAPS_API_KEY: string;
   export const CDN_URL: string;
   export const BASE_URL_LIVE: string;
   export const STRIPE_PUBLISH_KEY_LIVE: string;

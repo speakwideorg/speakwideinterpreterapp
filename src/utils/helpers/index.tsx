@@ -4,6 +4,7 @@ import RNFetchBlob from 'react-native-blob-util';
 import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import { MONTH_OPTIONS } from '../constants';
 import moment from 'moment';
+import { GOOGLE_MAPS_API_KEY } from '@env';
 
 export const delay = (ms: number) =>
   new Promise<void>(resolve => setTimeout(resolve, ms));
@@ -318,7 +319,7 @@ export const addDateSeparators = (messages: any[]) => {
 export const getSimplePlaceName = async (latitude: any, longitude: any) => {
   try {
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=AIzaSyCZ7D7QHZVpzkpYgX91tznbypaCGqYKO8Y`,
+      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`,
     );
     const data = await response.json();
 
@@ -335,7 +336,7 @@ export const getSimplePlaceName = async (latitude: any, longitude: any) => {
 export const getPlaceDetails = async (placeId: any) => {
   try {
     const response = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=AIzaSyCZ7D7QHZVpzkpYgX91tznbypaCGqYKO8Y`,
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${GOOGLE_MAPS_API_KEY}`,
     );
     const data = await response.json();
     if (data.result && data.result.geometry && data.result.geometry.location) {

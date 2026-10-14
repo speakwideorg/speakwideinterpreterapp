@@ -16,6 +16,7 @@ import {
 } from 'react-native-google-places-autocomplete';
 import { Colors, Icons } from '@app/themes';
 import { normalize } from '@app/utils/orientation';
+import { GOOGLE_MAPS_API_KEY } from '@env';
 
 interface PlacesAutocompleteInputProps {
   placeholder?: string;
@@ -99,7 +100,7 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
         Platform.OS === 'android' ? renderClearButton() : null
       }
       query={{
-        key: 'AIzaSyCZ7D7QHZVpzkpYgX91tznbypaCGqYKO8Y',
+        key: GOOGLE_MAPS_API_KEY,
         language: 'en',
       }}
       styles={{
