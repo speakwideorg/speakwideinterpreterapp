@@ -29,6 +29,7 @@ interface initialStateInterface {
   /////////////////////// responses
   createAccountResponse: any;
   v2Required: boolean;
+  v2FailedMessage: string;
   rateLimitCooldown: number;
   signinResponse: any;
   refreshTokenResponse: any;
@@ -55,6 +56,7 @@ const initialState: initialStateInterface = {
   /////////////////////// responses
   createAccountResponse: {},
   v2Required: false,
+  v2FailedMessage: '',
   rateLimitCooldown: 0,
   signinResponse: {},
   refreshTokenResponse: {},
@@ -134,6 +136,17 @@ const AuthSlice = createSlice({
     },
     resetV2Required(state) {
       state.v2Required = false;
+    },
+    createAccountV2Failed(
+      state,
+      action: { payload: { message: string }; type: string },
+    ) {
+      state.isLoading = false;
+      state.status = action.type;
+      state.v2FailedMessage = action.payload.message;
+    },
+    resetV2Failed(state) {
+      state.v2FailedMessage = '';
     },
     createAccountRateLimited(
       state,
@@ -452,6 +465,8 @@ export const {
   createAccountFailure,
   createAccountV2Required,
   resetV2Required,
+  createAccountV2Failed,
+  resetV2Failed,
   createAccountRateLimited,
   resetRateLimitCooldown,
 

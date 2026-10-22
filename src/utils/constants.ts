@@ -13,8 +13,8 @@ import {
 } from '@env';
 
 // const base_url = BASE_URL;
-// const base_url = BASE_URL_LIVE;
-const base_url = 'http://192.168.6.139:1892';
+const base_url = BASE_URL_LIVE;
+// const base_url = 'http://192.168.6.139:1892';
 // const base_url = 'https://c48f48cace81.ngrok-free.app';
 
 // console.log("base url==>", base_url)
@@ -28,10 +28,20 @@ export const URL_LIST = {
 // Testing keys (commented out):
 // v3 testing site key: '6Lff9-wtAAAAABkn9azFVW1qnIz2mjTdoIqAm1w9'
 // v2 testing site key: '6LeN5OwtAAAAAPXRz0mWUjxpT4TXNHYYpEz7lRWO'
+const isLocalEnv =
+  base_url.includes('192.168') ||
+  base_url.includes('localhost') ||
+  base_url.includes('127.0.0.1');
+
 export const RECAPTCHA_CONFIG = {
   v3_site_key: RECAPTCHA_SITE_KEY || NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6LcGYe0tAAAAAA0lMUnQCOhSqZpDxfYnXZBLW6ec',
   v2_site_key: RECAPTCHA_V2_SITE_KEY || NEXT_PUBLIC_RECAPTCHA_V2_SITE_KEY || '6LebY-0tAAAAAHGGaHe8WMSnvlhEaD7erHW4cSGj',
-  v2_page_url: RECAPTCHA_V2_PAGE_URL || 'https://speakwide.com/captcha/mobile/',
+  v2_page_url: isLocalEnv
+    ? RECAPTCHA_V2_PAGE_URL || 'http://192.168.6.139:14384/captcha/mobile/'
+    : 'https://speakwide.com/captcha/mobile/',
+  v3_base_url: isLocalEnv
+    ? 'http://192.168.6.139:14384/'
+    : 'https://speakwide.com/',
 };
 
 // export const BUCKET_IMAGE_URL = {

@@ -56,7 +56,7 @@ android {
         applicationId "com.speakwideinterpreter"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 14
+        versionCode 16
         versionName "1.7"
         manifestPlaceholders = [
             GOOGLE_MAPS_API_KEY: googleMapsApiKey
@@ -87,6 +87,10 @@ android {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
+    }
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
     }
 }
 

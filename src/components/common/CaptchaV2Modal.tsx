@@ -47,6 +47,7 @@ export const CaptchaV2Modal: React.FC<CaptchaV2ModalProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isExpired, setIsExpired] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [useInlineFallback, setUseInlineFallback] = useState<boolean>(false);
 
   const activeAttemptIdRef = useRef<string>('');
   const isSolvedRef = useRef<boolean>(false);
@@ -66,6 +67,7 @@ export const CaptchaV2Modal: React.FC<CaptchaV2ModalProps> = ({
     setLoadError(null);
     setIsLoading(true);
     setAttemptId(newId);
+    setUseInlineFallback(false);
     console.log('[CaptchaV2Modal] Starting new verification attempt:', newId);
   }, [generateAttemptId]);
 
@@ -78,6 +80,14 @@ export const CaptchaV2Modal: React.FC<CaptchaV2ModalProps> = ({
       isSolvedRef.current = false;
     }
   }, [visible, startNewAttempt]);
+
+  // Re-attempt when a new server error message arrives
+  useEffect(() => {
+    if (message && visible) {
+      console.log('[CaptchaV2Modal] Server error message received, restarting attempt:', message);
+      startNewAttempt();
+    }
+  }, [message, visible, startNewAttempt]);
 
   // Handle Backgrounding / Resume:
   // Invalidate the active challenge and reload with a fresh ID on resume.
@@ -121,14 +131,24 @@ export const CaptchaV2Modal: React.FC<CaptchaV2ModalProps> = ({
   // Testing key: '6LeN5OwtAAAAAPXRz0mWUjxpT4TXNHYYpEz7lRWO'
   const effectiveSiteKey = siteKey || '6LebY-0tAAAAAHGGaHe8WMSnvlhEaD7erHW4cSGj';
 
-  // Google reCAPTCHA v2 validates client-side domain against the sitekey.
-  // The test site key 6LeN5Owt... is registered for localhost in Google Console.
-  // Production keys are registered for speakwide.com.
   const isTestKey =
     effectiveSiteKey === '6LeN5OwtAAAAAPXRz0mWUjxpT4TXNHYYpEz7lRWO' ||
     effectiveSiteKey.startsWith('6LeN5Owt');
 
-  const effectiveBaseUrl = isTestKey ? 'http://localhost/' : 'https://speakwide.com/';
+  const getEffectiveBaseUrl = () => {
+    if (isTestKey) return 'http://localhost/';
+    if (pageUrl && pageUrl.startsWith('http')) {
+      try {
+        const parsed = new URL(pageUrl);
+        return `${parsed.protocol}//${parsed.host}/`;
+      } catch {
+        // fallback
+      }
+    }
+    return 'https://speakwide.com/';
+  };
+
+  const effectiveBaseUrl = getEffectiveBaseUrl();
 
   // Build target URL containing only the unique attemptId query param (NO registration details)
   const fullTargetUrl =
@@ -262,8 +282,10 @@ export const CaptchaV2Modal: React.FC<CaptchaV2ModalProps> = ({
     </html>
   `;
 
-  // Fall back to inline HTML if pageUrl is unhosted / default /captcha/mobile/ (which returns 404)
-  const isHostedPageAvailable = Boolean(pageUrl && !pageUrl.includes('/captcha/mobile/'));
+  // Use hosted bridge page if configured; fall back to inline HTML if fallback is active
+  const isHostedPageAvailable = Boolean(
+    !useInlineFallback && pageUrl && pageUrl.startsWith('http')
+  );
   const webViewSource = isHostedPageAvailable
     ? { uri: fullTargetUrl }
     : { html: inlineHtml, baseUrl: effectiveBaseUrl };
@@ -414,13 +436,30 @@ export const CaptchaV2Modal: React.FC<CaptchaV2ModalProps> = ({
                     originWhitelist={['*']}
                     onMessage={handleMessage}
                     onLoadEnd={() => setIsLoading(false)}
+                    onHttpError={syntheticEvent => {
+                      const { nativeEvent } = syntheticEvent;
+                      console.warn(
+                        '[CaptchaV2Modal] WebView onHttpError:',
+                        nativeEvent?.statusCode,
+                        nativeEvent?.description,
+                      );
+                      if (!useInlineFallback && nativeEvent?.statusCode >= 400) {
+                        console.log('[CaptchaV2Modal] Hosted page HTTP error, falling back to inline HTML');
+                        setUseInlineFallback(true);
+                      }
+                    }}
                     onError={syntheticEvent => {
                       const { nativeEvent } = syntheticEvent;
                       console.warn('[CaptchaV2Modal] WebView onError:', nativeEvent?.description);
-                      setIsLoading(false);
-                      setLoadError(
-                        'Verification could not load. Check your connection and retry.',
-                      );
+                      if (!useInlineFallback && isHostedPageAvailable) {
+                        console.log('[CaptchaV2Modal] Hosted page load failed, falling back to inline HTML');
+                        setUseInlineFallback(true);
+                      } else {
+                        setIsLoading(false);
+                        setLoadError(
+                          'Verification could not load. Check your connection and retry.',
+                        );
+                      }
                     }}
                     showsVerticalScrollIndicator={false}
                     showsHorizontalScrollIndicator={false}

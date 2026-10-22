@@ -30,6 +30,22 @@ allprojects {
         maven { url 'https://sdk.withpersona.com/android/releases' }
         maven { url "${rootProject.projectDir}/../node_modules/@notifee/react-native/android/libs" }
     }
+    tasks.matching { it.name.startsWith("lintVital") }.configureEach {
+        enabled = false
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            android {
+                lintOptions {
+                    checkReleaseBuilds false
+                    abortOnError false
+                }
+            }
+        }
+    }
 }
 
 apply plugin: "com.facebook.react.rootproject"

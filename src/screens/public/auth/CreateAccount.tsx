@@ -33,6 +33,7 @@ import { useAppDispatch, useAppSelector } from '@app/store';
 import {
   createAccountRequest,
   resetV2Required,
+  resetV2Failed,
   resetRateLimitCooldown,
 } from '@app/store/slice/auth.slice';
 import RenderHtml from 'react-native-render-html';
@@ -69,6 +70,7 @@ const CreateAccount = () => {
     token,
     status,
     v2Required,
+    v2FailedMessage,
     rateLimitCooldown,
   } = useAppSelector(state => state.auth);
   const { cmsDetailsResponse } = useAppSelector(state => state.default);
@@ -142,6 +144,18 @@ const CreateAccount = () => {
       }
     }
   }, [v2Required, phase, dispatch]);
+
+  // Handle backend HTTP 403 v2 captcha verification failure (keep modal open with message)
+  useEffect(() => {
+    if (v2FailedMessage && (phase === 'submitting' || phase === 'checking-v3')) {
+      if (isMountedRef.current) {
+        console.log('[CreateAccount] v2 failed verification message received:', v2FailedMessage);
+        setV2Message(v2FailedMessage);
+        setPhase('awaiting-v2');
+        dispatch(resetV2Failed());
+      }
+    }
+  }, [v2FailedMessage, phase, dispatch]);
 
   // Handle HTTP 429 rate limit signal
   useEffect(() => {
@@ -268,6 +282,7 @@ const CreateAccount = () => {
   const handleV2Solved = (v2Token: string) => {
     if (!isMountedRef.current) return;
     console.log('[CreateAccount] v2 solved successfully -> submitting with v2 token');
+    setV2Message('');
     if (pendingPayloadRef.current) {
       const finalPayload = {
         ...pendingPayloadRef.current,
@@ -283,6 +298,7 @@ const CreateAccount = () => {
   const handleV2Cancel = () => {
     if (!isMountedRef.current) return;
     console.log('[CreateAccount] v2 cancelled by user -> returning to form');
+    setV2Message('');
     setPhase('idle');
   };
 
@@ -518,7 +534,7 @@ const CreateAccount = () => {
       {phase === 'checking-v3' && (
         <CaptchaWebView
           siteKey={RECAPTCHA_CONFIG.v3_site_key || RECAPTCHA_SITE_KEY}
-          baseUrl={BASE_URL_LIVE}
+          baseUrl={RECAPTCHA_CONFIG.v3_base_url || BASE_URL_LIVE}
           onSuccess={handleV3Success}
           onError={handleV3Error}
         />

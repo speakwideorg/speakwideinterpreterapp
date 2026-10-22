@@ -6,6 +6,7 @@ import {
   createAccountFailure,
   createAccountSuccess,
   createAccountV2Required,
+  createAccountV2Failed,
   createAccountRateLimited,
   deleteAccountFailure,
   deleteAccountSuccess,
@@ -69,6 +70,23 @@ function* handleCreateAccount(action: any) {
         responseData?.requiresRecaptchaV2)
     ) {
       yield put(createAccountV2Required(responseData));
+      return;
+    }
+
+    // HTTP 403 v2 verification failure: keep modal open and let user retry (matching website)
+    if (
+      status === 403 &&
+      (responseData?.code === 'CAPTCHA_VERIFICATION_FAILED' ||
+        responseData?.message === "We couldn't verify that you're human. Please try again." ||
+        responseData?.message?.toLowerCase().includes("verify that you're human"))
+    ) {
+      yield put(
+        createAccountV2Failed({
+          message:
+            responseData?.message ||
+            "We couldn't verify that you're human. Please try again.",
+        }),
+      );
       return;
     }
 
