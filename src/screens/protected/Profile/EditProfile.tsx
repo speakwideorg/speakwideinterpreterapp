@@ -7,6 +7,7 @@ import {
   ImageBackground,
   Image,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import KeyboardAvoidingTemplate from '@app/components/template/KeyboardAvoidingTemplate';
 import {
@@ -50,7 +51,8 @@ import {
   profileUpdateRequest,
   resetAuthDefaults,
 } from '@app/store/slice/auth.slice';
-import { getFileFromLocal } from '@app/utils/helpers/FileActions';
+import RNFS from 'react-native-fs';
+import { getFileFromLocal, getMimeType } from '@app/utils/helpers/FileActions';
 import CustomImageFilePicker from '@app/components/common/CustomImageFilePicker';
 import { formatPhoneNumber } from '@app/utils/helpers';
 import PlacesAutocompleteInput from '@app/components/common/PlaceAutocompleteInput';
@@ -161,6 +163,30 @@ const ProfileSetup = () => {
     profileDetails?.languages || [],
   );
 
+  // Safely parse and format certificate expiration date from any format
+  const getFormattedExpireDate = (cert: any): string => {
+    const raw =
+      cert?.expiration_date ||
+      cert?.expire_date ||
+      cert?.certificate_expiration_date ||
+      cert?.expirationDate;
+    if (!raw) return '';
+    if (typeof raw === 'string') {
+      const parsed = moment(raw);
+      if (parsed.isValid()) {
+        return parsed.format('YYYY-MM-DD');
+      }
+      return raw.slice(0, 10);
+    }
+    if (raw instanceof Date || typeof raw === 'number') {
+      const parsed = moment(raw);
+      if (parsed.isValid()) {
+        return parsed.format('YYYY-MM-DD');
+      }
+    }
+    return '';
+  };
+
   // Initialize certificate list from info.certificates
   const initializeCertificateList = (): CertificateItem[] => {
     if (
@@ -168,7 +194,7 @@ const ProfileSetup = () => {
       profileDetails?.certificate_documents?.length > 0
     ) {
       return profileDetails?.certificate_documents?.map((cert: any) => ({
-        expire_date: cert?.expiration_date?.slice(0, 10) || '',
+        expire_date: getFormattedExpireDate(cert),
         image: {
           name: cert?.document || '',
           type: ['jpg', 'jpeg', 'png', 'gif'].includes(
@@ -222,6 +248,54 @@ const ProfileSetup = () => {
       };
     }
     return { uri: '', name: '', type: '' };
+  };
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Helper to ensure certificate files (including remote CloudFront URLs) are converted
+  // to valid local file parts before sending in multipart/form-data.
+  // The backend Multer parser ONLY updates certificates and expiration dates when a file
+  // is provided in req.files['certificate_documents'].
+  const resolveCertificateFile = async (
+    item: CertificateItem,
+  ): Promise<{ uri: string; name: string; type: string } | null> => {
+    const rawUri = item?.image?.uri;
+    if (!rawUri) return null;
+
+    const name =
+      item?.image?.name || rawUri.split('/').pop() || 'certificate.pdf';
+    const type = item?.image?.type || getMimeType(name) || 'application/pdf';
+
+    if (rawUri.startsWith('http://') || rawUri.startsWith('https://')) {
+      try {
+        const safeName = name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const localPath = `${RNFS.CachesDirectoryPath}/${Date.now()}_${safeName}`;
+        const downloadRes = await RNFS.downloadFile({
+          fromUrl: encodeURI(rawUri),
+          toFile: localPath,
+          background: false,
+          discretionary: false,
+        }).promise;
+
+        if (downloadRes && downloadRes.statusCode === 200) {
+          const fileUri =
+            Platform.OS === 'ios' && !localPath.startsWith('file://')
+              ? `file://${localPath}`
+              : localPath;
+          return { uri: fileUri, name, type };
+        }
+      } catch (err) {
+        console.error('[resolveCertificateFile] Download error:', err);
+      }
+      return null;
+    }
+
+    // Local file from device
+    const fileUri =
+      Platform.OS === 'ios' && !rawUri.startsWith('file://')
+        ? `file://${rawUri}`
+        : rawUri;
+    return { uri: fileUri, name, type };
   };
 
   const [certificateList, setCertificateList] = useState<CertificateItem[]>([]);
@@ -349,7 +423,9 @@ const ProfileSetup = () => {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (isSaving) return;
+
     const deletedIdentityProofs = getDeletedIdentityProofs(
       profileDetails.identity_proofs,
       identificationList,
@@ -423,70 +499,96 @@ const ProfileSetup = () => {
     } else if (!identificationList.every(item => item.uri)) {
       showMessage('Please add or complete identification card.');
     } else {
-      const payload = new FormData();
-      payload.append('full_name', info.fullname);
-      payload.append('objectives', info.about_me);
-      payload.append('phone', info.phone);
-      payload.append('gender', info.preferred_gender);
-      if (isEINEdited && isValidEIN(info.ein)) {
-        payload.append('ein', unformatEIN(info.ein));
-      }
-      if (isSSNEdited && isValidSSN(info.ssn)) {
-        payload.append('social_security_number', unformatSSN(info.ssn));
-      }
-      payload.append('address', info.street_address);
-
-      // Only send profile_image when the user picked a NEW local file. When the
-      // photo is unchanged, profileImg.uri holds the existing S3 URL (http...),
-      // which is not a valid file part and would error/clear the image on save.
-      if (profileImg.uri && !profileImg.uri.startsWith('http')) {
-        payload.append('profile_image', profileImg as any);
-      }
-
-      expertise?.forEach((item, index) => {
-        payload.append(`area_of_expertise_id[${index}]`, item._id);
-      });
-
-      languages?.forEach((item, index) => {
-        payload.append(`language_id[${index}]`, item._id);
-      });
-
-      identificationList?.forEach(item => {
-        payload.append('identity_proofs', item as any);
-      });
-
-      certificateList?.forEach(item => {
-        if (item?.image?.uri !== '') {
-          payload.append('certificate_documents', item?.image as any);
+      setIsSaving(true);
+      try {
+        const payload = new FormData();
+        payload.append('full_name', info.fullname);
+        payload.append('objectives', info.about_me);
+        payload.append('phone', info.phone);
+        payload.append('gender', info.preferred_gender);
+        if (isEINEdited && isValidEIN(info.ein)) {
+          payload.append('ein', unformatEIN(info.ein));
         }
-      });
+        if (isSSNEdited && isValidSSN(info.ssn)) {
+          payload.append('social_security_number', unformatSSN(info.ssn));
+        }
+        payload.append('address', info.street_address);
 
-      if (certificateList?.length === 1) {
-        if (certificateList[0]?.image?.uri === '') {
+        // Only send profile_image when the user picked a NEW local file. When the
+        // photo is unchanged, profileImg.uri holds the existing S3 URL (http...),
+        // which is not a valid file part and would error/clear the image on save.
+        if (profileImg.uri && !profileImg.uri.startsWith('http')) {
+          payload.append('profile_image', profileImg as any);
+        }
+
+        expertise?.forEach((item, index) => {
+          payload.append(`area_of_expertise_id[${index}]`, item._id);
+        });
+
+        languages?.forEach((item, index) => {
+          payload.append(`language_id[${index}]`, item._id);
+        });
+
+        identificationList?.forEach(item => {
+          if (item.uri && !item.uri.startsWith('http')) {
+            payload.append('identity_proofs', {
+              uri:
+                Platform.OS === 'ios' && !item.uri.startsWith('file://')
+                  ? `file://${item.uri}`
+                  : item.uri,
+              name: item.name || 'identity_proof.pdf',
+              type: item.type || 'application/pdf',
+            } as any);
+          }
+        });
+
+        // Ensure every certificate (local or remote CDN) is passed as a valid file part
+        // along with its corresponding certificate_expiration_date.
+        // The backend Multer controller only processes certificate_expiration_date
+        // when a file is provided in req.files['certificate_documents'].
+        for (const item of certificateList) {
+          if (item?.image?.uri) {
+            const resolved = await resolveCertificateFile(item);
+            if (resolved) {
+              payload.append('certificate_documents', resolved as any);
+              payload.append(
+                'certificate_expiration_date',
+                item?.expire_date || '',
+              );
+            }
+          }
+        }
+
+        if (
+          certificateList?.length === 1 &&
+          certificateList[0]?.image?.uri === ''
+        ) {
           payload.append('certificate_documents', [] as any);
         }
-      }
 
-      certificateList?.forEach(item => {
-        if (item?.image?.uri !== '') {
-          payload.append('certificate_expiration_date', item?.expire_date);
+        const hasCerts = certificateList.some(item => !!item?.image?.uri);
+        payload.append('isCertified', hasCerts ? 'true' : 'false');
+
+        // Only send w9Form when the user picked a NEW local file. When unchanged,
+        // w99FormData.uri holds the existing CDN URL (http...), which is not a valid
+        // file part and would error or clear the W9 form on the server.
+        if (w99FormData.uri && !w99FormData.uri.startsWith('http')) {
+          payload.append('w9Form', {
+            uri:
+              Platform.OS === 'ios' && !w99FormData.uri.startsWith('file://')
+                ? `file://${w99FormData.uri}`
+                : w99FormData.uri,
+            name: w99FormData.name || 'w9_form.pdf',
+            type: w99FormData.type || 'application/pdf',
+          } as any);
         }
-      });
 
-      if (w99FormData.uri) {
-        payload.append('w9Form', w99FormData as any);
+        console.log('certificate list==>', certificateList);
+
+        dispatch(profileUpdateRequest(payload));
+      } finally {
+        setIsSaving(false);
       }
-
-      console.log('certificate list==>', certificateList);
-
-      // dispatch(
-      //   deleteDocumentRequest({
-      //     certificate_documents: '',
-      //     identity_proofs: '',
-      //   }),
-      // );
-
-      dispatch(profileUpdateRequest(payload));
     }
   };
 
@@ -495,7 +597,7 @@ const ProfileSetup = () => {
   return (
     <KeyboardAvoidingTemplate
       contentContainerStyle={styles.container}
-      loaderEnable={isLoading}
+      loaderEnable={isLoading || isSaving}
     >
       <View style={styles.main}>
         <ImageBackground source={Images.top_shape} style={styles.background}>
@@ -857,21 +959,24 @@ const ProfileSetup = () => {
                             isMultiple: false,
                             callback: files => {
                               console.log('Picked File:', files);
-                              setCertificateList(prev =>
-                                prev.map((itm, i) =>
-                                  i === index
-                                    ? {
-                                      ...itm,
-                                      expire_date: '',
-                                      image: {
-                                        name: files[0]?.path?.name || '',
-                                        uri: files[0]?.path?.uri || '',
-                                        type: files[0]?.path?.type,
-                                      },
-                                    }
-                                    : itm,
-                                ),
-                              );
+                              const picked = files?.[0]?.path;
+                              if (picked) {
+                                setCertificateList(prev =>
+                                  prev.map((itm, i) =>
+                                    i === index
+                                      ? {
+                                        ...itm,
+                                        expire_date: itm.expire_date,
+                                        image: {
+                                          name: picked.name || '',
+                                          uri: picked.uri || '',
+                                          type: picked.type || 'application/pdf',
+                                        },
+                                      }
+                                      : itm,
+                                  ),
+                                );
+                              }
                             },
                           });
                           // setImageIsVisible(true);
@@ -887,26 +992,25 @@ const ProfileSetup = () => {
                     )}
                   </View>
 
-                  <TextInput
-                    title={'Add Certification Expiration Date'}
-                    value={item?.expire_date}
-                    onChangeText={txt =>
-                      setCertificateList(prev =>
-                        prev.map((val, i) =>
-                          i === index ? { ...val, expire_date: txt } : val,
-                        ),
-                      )
-                    }
-                    placeholder="Select Expiration Date"
-                    width={'100%'}
-                    editable={false}
-                    backgroundColor={Colors.white}
-                    titleStyle={{ fontSize: normalize(10) }}
-                    rightIcon={Icons.calendar}
-                    onRightIconPress={() => {
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
                       setDateVisibleId(index);
                     }}
-                  />
+                  >
+                    <View pointerEvents="none">
+                      <TextInput
+                        title={'Add Certification Expiration Date'}
+                        value={item?.expire_date}
+                        placeholder="Select Expiration Date"
+                        width={'100%'}
+                        editable={false}
+                        backgroundColor={Colors.white}
+                        titleStyle={{ fontSize: normalize(10) }}
+                        rightIcon={Icons.calendar}
+                      />
+                    </View>
+                  </TouchableOpacity>
                   <DatePicker
                     modal
                     open={dateVisibleId === index}
@@ -1188,11 +1292,14 @@ const ProfileSetup = () => {
                         isMultiple: false,
                         callback: files => {
                           console.log('Picked File:', files);
-                          setW99FormData({
-                            name: files[0]?.path?.name || '',
-                            uri: files[0]?.path?.uri || '',
-                            type: files[0]?.path?.type,
-                          });
+                          const picked = files?.[0]?.path;
+                          if (picked) {
+                            setW99FormData({
+                              name: picked.name || '',
+                              uri: picked.uri || '',
+                              type: picked.type || 'application/pdf',
+                            });
+                          }
                         },
                       });
                       // setImageIsVisible(true);
@@ -1226,6 +1333,7 @@ const ProfileSetup = () => {
               onPress={() => handleSave()}
               width="47.5%"
               angle={60}
+              disabled={isSaving}
             />
           </View>
         </View>

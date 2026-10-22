@@ -97,6 +97,15 @@ const Profile = () => {
     state => state.auth.profileDetailsResponse,
   );
 
+  const getDocName = (item: any): string => {
+    if (!item) return '';
+    if (typeof item === 'string') return item;
+    if (Array.isArray(item) && item.length > 0) return getDocName(item[0]);
+    return item?.document || item?.uri || item?.name || '';
+  };
+
+  const w9DocName = getDocName(profileDetails?.w9Form);
+
   const fetchProfileDetails = () => {
     dispatch(profileDetailsRequest());
   };
@@ -261,9 +270,13 @@ const Profile = () => {
             {profileDetails?.certificate_documents?.map((item: any, i) => {
               const docName = typeof item === 'string' ? item : item?.document || item?.name || '';
               if (!docName) return null;
+              const expireDate =
+                typeof item === 'object' && item?.expiration_date
+                  ? moment(item.expiration_date).format('YYYY-MM-DD')
+                  : null;
               return (
                 <View key={i} style={styles.fileCard}>
-                  <View style={[Css.fdr, Css.aic]}>
+                  <View style={[Css.fdr, Css.aic, { flex: 1, marginRight: normalize(10) }]}>
                     <Image
                       source={Icons.picture_as_pdf}
                       style={{
@@ -271,7 +284,21 @@ const Profile = () => {
                         width: normalize(20),
                       }}
                     />
-                    <Text style={styles.fileName}>{docName}</Text>
+                    <View style={{ marginLeft: normalize(10), flex: 1 }}>
+                      <Text style={[styles.fileName, { marginLeft: 0 }]} numberOfLines={1}>{docName}</Text>
+                      {expireDate ? (
+                        <Text
+                          style={{
+                            fontSize: normalize(10),
+                            color: Colors.dark_grey,
+                            fontFamily: Fonts.Inter_Regular,
+                            marginTop: normalize(2),
+                          }}
+                        >
+                          Expires: {expireDate}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
 
                   <TouchableOpacity
@@ -336,11 +363,11 @@ const Profile = () => {
             })}
           </View>
 
-          <Text style={styles.sectionTitle}>w9 Form</Text>
+          <Text style={styles.sectionTitle}>W-9 Form</Text>
           <View style={[styles.card]}>
-            {profileDetails?.w9Form ? (
+            {w9DocName ? (
               <View style={styles.fileCard}>
-                <View style={[Css.fdr, Css.aic]}>
+                <View style={[Css.fdr, Css.aic, Css.f1, { marginRight: normalize(10) }]}>
                   <Image
                     source={Icons.photo_library}
                     style={{
@@ -348,18 +375,16 @@ const Profile = () => {
                       width: normalize(20),
                     }}
                   />
-                  <Text style={styles.fileName}>{profileDetails?.w9Form}</Text>
+                  <Text numberOfLines={1} ellipsizeMode="middle" style={styles.fileName}>
+                    {w9DocName}
+                  </Text>
                 </View>
 
                 <TouchableOpacity
                   onPress={() =>
-                    // SaveToGallery(
-                    //   `${IMAGES_BUCKET_URL.w9Form}${profileDetails?.w9Form}`,
-                    //   profileDetails?.w9Form,
-                    // )
                     downloadFile({
-                      fileUrl: `${IMAGES_BUCKET_URL.w9Form}${profileDetails?.w9Form}`,
-                      fileName: profileDetails?.w9Form,
+                      fileUrl: `${IMAGES_BUCKET_URL.w9Form}${w9DocName}`,
+                      fileName: w9DocName,
                     })
                   }
                 >

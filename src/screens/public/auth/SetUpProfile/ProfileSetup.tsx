@@ -6,6 +6,7 @@ import {
   ImageBackground,
   Image,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import KeyboardAvoidingTemplate from '@app/components/template/KeyboardAvoidingTemplate';
@@ -203,21 +204,50 @@ const ProfileSetup = () => {
       });
 
       identificationList?.forEach(item => {
-        payload.append('identity_proofs', item as any);
-      });
-
-      certificateList?.forEach(item => {
-        if (item?.image?.uri !== '') {
-          payload.append('certificate_documents', item?.image as any);
+        if (item?.uri) {
+          payload.append('identity_proofs', {
+            uri:
+              Platform.OS === 'ios' && !item.uri.startsWith('file://')
+                ? `file://${item.uri}`
+                : item.uri,
+            name: item.name || 'identity_proof.pdf',
+            type: item.type || 'application/pdf',
+          } as any);
         }
       });
 
       certificateList?.forEach(item => {
         if (item?.image?.uri !== '') {
-          payload.append('certificate_expiration_date', item?.expire_date);
+          payload.append('certificate_documents', {
+            uri:
+              Platform.OS === 'ios' && !item.image.uri.startsWith('file://')
+                ? `file://${item.image.uri}`
+                : item.image.uri,
+            name: item.image.name || 'certificate.pdf',
+            type: item.image.type || 'application/pdf',
+          } as any);
         }
       });
-      if (w99FormData?.uri) payload.append('w9Form', w99FormData as any);
+
+      certificateList?.forEach(item => {
+        if (item?.image?.uri !== '') {
+          payload.append('certificate_expiration_date', item?.expire_date || '');
+        }
+      });
+
+      const hasCerts = certificateList.some(item => !!item?.image?.uri);
+      payload.append('isCertified', hasCerts ? 'true' : 'false');
+
+      if (w99FormData?.uri) {
+        payload.append('w9Form', {
+          uri:
+            Platform.OS === 'ios' && !w99FormData.uri.startsWith('file://')
+              ? `file://${w99FormData.uri}`
+              : w99FormData.uri,
+          name: w99FormData.name || 'w9_form.pdf',
+          type: w99FormData.type || 'application/pdf',
+        } as any);
+      }
 
       console.log('payload is ===>', payload);
 
@@ -530,23 +560,24 @@ const ProfileSetup = () => {
                             isMultiple: false,
                             callback: files => {
                               console.log('Picked File:', files);
-                              setCertificateList(prev =>
-                                prev.map((itm, i) =>
-                                  i === index
-                                    ? {
-                                      ...itm,
-                                      expire_date: '',
-                                      image: {
-                                        name: files[0]?.path?.name || '',
-                                        uri: files[0]?.path?.uri || '',
-                                        type:
-                                          files[0]?.path?.type ||
-                                          'image/jpeg',
-                                      },
-                                    }
-                                    : itm,
-                                ),
-                              );
+                              const picked = files?.[0]?.path;
+                              if (picked) {
+                                setCertificateList(prev =>
+                                  prev.map((itm, i) =>
+                                    i === index
+                                      ? {
+                                        ...itm,
+                                        expire_date: itm.expire_date,
+                                        image: {
+                                          name: picked.name || '',
+                                          uri: picked.uri || '',
+                                          type: picked.type || 'application/pdf',
+                                        },
+                                      }
+                                      : itm,
+                                  ),
+                                );
+                              }
                             },
                           });
 
@@ -563,26 +594,25 @@ const ProfileSetup = () => {
                     )}
                   </View>
 
-                  <TextInput
-                    title={'Add Certification Expiration Date'}
-                    value={item?.expire_date}
-                    onChangeText={txt =>
-                      setCertificateList(prev =>
-                        prev.map((val, i) =>
-                          i === index ? { ...val, expire_date: txt } : val,
-                        ),
-                      )
-                    }
-                    placeholder="Select Expiration Date"
-                    width={'100%'}
-                    editable={false}
-                    backgroundColor={Colors.white}
-                    titleStyle={{ fontSize: normalize(10) }}
-                    rightIcon={Icons.calendar}
-                    onRightIconPress={() => {
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
                       setDateVisibleId(index);
                     }}
-                  />
+                  >
+                    <View pointerEvents="none">
+                      <TextInput
+                        title={'Add Certification Expiration Date'}
+                        value={item?.expire_date}
+                        placeholder="Select Expiration Date"
+                        width={'100%'}
+                        editable={false}
+                        backgroundColor={Colors.white}
+                        titleStyle={{ fontSize: normalize(10) }}
+                        rightIcon={Icons.calendar}
+                      />
+                    </View>
+                  </TouchableOpacity>
                   <DatePicker
                     modal
                     open={dateVisibleId === index}
@@ -866,11 +896,14 @@ const ProfileSetup = () => {
                         isMultiple: false,
                         callback: files => {
                           console.log('Picked File:', files);
-                          setW99FormData({
-                            name: files[0]?.path?.name || '',
-                            uri: files[0]?.path?.uri || '',
-                            type: files[0]?.path?.type || 'image/jpeg',
-                          });
+                          const picked = files?.[0]?.path;
+                          if (picked) {
+                            setW99FormData({
+                              name: picked.name || '',
+                              uri: picked.uri || '',
+                              type: picked.type || 'application/pdf',
+                            });
+                          }
                         },
                       });
                       // setImageIsVisible(true);

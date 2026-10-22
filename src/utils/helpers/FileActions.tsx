@@ -69,6 +69,30 @@ const IOS_PICKER_TYPES = [
 ];
 
 /* =========================================================
+   MIME TYPE HELPER
+========================================================= */
+
+export const getMimeType = (filename: string) => {
+  const ext = filename?.split('.').pop()?.toLowerCase();
+
+  const mimeTypes: Record<string, string> = {
+    pdf: 'application/pdf',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    txt: 'text/plain',
+  };
+
+  return mimeTypes[ext || ''] || 'application/octet-stream';
+};
+
+/* =========================================================
    FILE FORMATTER
 ========================================================= */
 
@@ -78,8 +102,15 @@ const formatFile = (file: DocumentPickerResponse) => {
 
   return {
     name: fileName,
-    type: file.type || file.nativeType || 'application/octet-stream',
-    uri: Platform.OS === 'android' ? file.uri : file.uri.replace('file://', ''),
+    type: getMimeType(fileName) || file.type || 'application/octet-stream',
+    // Keep the file:// scheme on iOS — stripping it breaks React Native's
+    // multipart upload since RCTNetworking requires a valid file:// URI to read the file.
+    uri:
+      Platform.OS === 'android'
+        ? file.uri
+        : file.uri.startsWith('file://')
+        ? file.uri
+        : `file://${file.uri}`,
     extension,
   };
 };
@@ -258,26 +289,3 @@ const shareFileiOS = async (filePath: string, fileName: string) => {
   }
 };
 
-/* =========================================================
-   MIME TYPE HELPER
-========================================================= */
-
-const getMimeType = (filename: string) => {
-  const ext = filename.split('.').pop()?.toLowerCase();
-
-  const mimeTypes: Record<string, string> = {
-    pdf: 'application/pdf',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    doc: 'application/msword',
-    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    xls: 'application/vnd.ms-excel',
-    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ppt: 'application/vnd.ms-powerpoint',
-    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    txt: 'text/plain',
-  };
-
-  return mimeTypes[ext || ''] || 'application/octet-stream';
-};
