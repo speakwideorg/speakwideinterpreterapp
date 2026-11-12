@@ -28,11 +28,76 @@ type ImagePickerProps = {
     height?: number;
   };
   cropperCircleOverlay?: boolean;
+  compressImageMaxWidth?: number;
+  compressImageMaxHeight?: number;
+  compressImageQuality?: number;
 };
 
 type PickerImage = {
   path: string;
   mime: string;
+};
+
+/**
+ * Normalizes a file URI for multipart FormData uploads across iOS and Android.
+ * - Leaves 'content://' (Android MediaStore/Documents provider) and 'file://' intact.
+ * - Prepends 'file://' to absolute filesystem paths (starting with '/') on BOTH iOS and Android.
+ */
+export const normalizeUploadUri = (uri?: string): string => {
+  if (!uri) return '';
+  if (
+    uri.startsWith('content://') ||
+    uri.startsWith('file://') ||
+    uri.startsWith('http://') ||
+    uri.startsWith('https://')
+  ) {
+    return uri;
+  }
+  return uri.startsWith('/') ? `file://${uri}` : `file://${uri}`;
+};
+
+export const requestCameraPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.CAMERA,
+      {
+        title: 'Camera Permission',
+        message: 'Speakwide needs camera permission to capture photos.',
+        buttonPositive: 'Allow',
+        buttonNegative: 'Cancel',
+      },
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  } catch (err) {
+    console.warn('Camera permission request error:', err);
+    return false;
+  }
+};
+
+export const requestGalleryPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') return true;
+  try {
+    if (Platform.Version >= 33) {
+      // Android 13+ uses the system Photo Picker (PickVisualMedia), which requires
+      // NO broad storage/media permissions, complying with Google Play policy.
+      return true;
+    } else {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: 'Storage Permission',
+          message: 'Speakwide needs storage permission to select photos.',
+          buttonPositive: 'Allow',
+          buttonNegative: 'Cancel',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+  } catch (err) {
+    console.warn('Gallery permission request error:', err);
+    return true;
+  }
 };
 
 // Utility function to format the image object
@@ -42,9 +107,7 @@ const formatImage = (image: PickerImage): ImageCallback['path'] => {
   return {
     name: fileName,
     type: mime,
-    // Keep the file:// scheme on iOS — stripping it makes React Native's
-    // multipart upload send an empty file part, so images never actually save.
-    uri: Platform.OS === 'android' ? path : path.startsWith('file://') ? path : `file://${path}`,
+    uri: normalizeUploadUri(path),
   };
 };
 
@@ -54,11 +117,15 @@ export const getImageFromGallery = async ({
   callback,
   size = { width: 400, height: 400 },
   cropperCircleOverlay = false,
+  compressImageMaxWidth = 2000,
+  compressImageMaxHeight = 2000,
+  compressImageQuality = 0.8,
 }: ImagePickerProps): Promise<void> => {
   try {
+    await requestGalleryPermission();
+
     const image = await ImagePicker.openPicker({
-      width: size.width,
-      height: size.height,
+      ...(isCrop ? { width: size.width, height: size.height } : {}),
       cropping: isCrop,
       mediaType: 'photo',
       cropperCircleOverlay: cropperCircleOverlay,
@@ -67,9 +134,18 @@ export const getImageFromGallery = async ({
       cropperToolbarWidgetColor: '#1E1F28',
       cropperActiveWidgetColor: '#3470E6',
       cropperToolbarTitle: 'Edit Photo',
-      compressImageQuality: 0.8,
+      compressImageMaxWidth,
+      compressImageMaxHeight,
+      compressImageQuality,
       forceJpg: true,
     });
+
+    console.log(
+      `[ImagePicker Gallery] Output: ${image.width}x${image.height}, ${(
+        (image.size || 0) /
+        1024
+      ).toFixed(1)} KB, mime: ${image.mime}`,
+    );
 
     callback({
       uri: image.path,
@@ -90,11 +166,26 @@ export const getImageFromCamera = async ({
   callback,
   size = { width: 400, height: 400 },
   cropperCircleOverlay = false,
+  compressImageMaxWidth = 2000,
+  compressImageMaxHeight = 2000,
+  compressImageQuality = 0.8,
 }: ImagePickerProps): Promise<void> => {
   try {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        'Permission Denied',
+        'Camera permission is required to capture photos.',
+      );
+      callback({
+        uri: '',
+        path: null,
+      });
+      return;
+    }
+
     const image = await ImagePicker.openCamera({
-      width: size.width,
-      height: size.height,
+      ...(isCrop ? { width: size.width, height: size.height } : {}),
       cropping: isCrop,
       mediaType: 'photo',
       cropperCircleOverlay: cropperCircleOverlay,
@@ -103,9 +194,18 @@ export const getImageFromCamera = async ({
       cropperToolbarWidgetColor: '#1E1F28',
       cropperActiveWidgetColor: '#3470E6',
       cropperToolbarTitle: 'Edit Photo',
-      compressImageQuality: 0.8,
+      compressImageMaxWidth,
+      compressImageMaxHeight,
+      compressImageQuality,
       forceJpg: true,
     });
+
+    console.log(
+      `[ImagePicker Camera] Output: ${image.width}x${image.height}, ${(
+        (image.size || 0) /
+        1024
+      ).toFixed(1)} KB, mime: ${image.mime}`,
+    );
 
     callback({
       uri: image.path,

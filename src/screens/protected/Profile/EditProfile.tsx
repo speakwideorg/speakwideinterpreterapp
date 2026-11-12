@@ -54,7 +54,7 @@ import {
 import RNFS from 'react-native-fs';
 import { getFileFromLocal, getMimeType } from '@app/utils/helpers/FileActions';
 import CustomImageFilePicker from '@app/components/common/CustomImageFilePicker';
-import { formatPhoneNumber } from '@app/utils/helpers';
+import { formatPhoneNumber, normalizeUploadUri } from '@app/utils/helpers';
 import PlacesAutocompleteInput from '@app/components/common/PlaceAutocompleteInput';
 
 // Fixed interfaces with proper typing
@@ -278,10 +278,7 @@ const ProfileSetup = () => {
         }).promise;
 
         if (downloadRes && downloadRes.statusCode === 200) {
-          const fileUri =
-            Platform.OS === 'ios' && !localPath.startsWith('file://')
-              ? `file://${localPath}`
-              : localPath;
+          const fileUri = normalizeUploadUri(localPath);
           return { uri: fileUri, name, type };
         }
       } catch (err) {
@@ -291,10 +288,7 @@ const ProfileSetup = () => {
     }
 
     // Local file from device
-    const fileUri =
-      Platform.OS === 'ios' && !rawUri.startsWith('file://')
-        ? `file://${rawUri}`
-        : rawUri;
+    const fileUri = normalizeUploadUri(rawUri);
     return { uri: fileUri, name, type };
   };
 
@@ -518,7 +512,11 @@ const ProfileSetup = () => {
         // photo is unchanged, profileImg.uri holds the existing S3 URL (http...),
         // which is not a valid file part and would error/clear the image on save.
         if (profileImg.uri && !profileImg.uri.startsWith('http')) {
-          payload.append('profile_image', profileImg as any);
+          payload.append('profile_image', {
+            uri: normalizeUploadUri(profileImg.uri),
+            name: profileImg.name || 'profile.jpg',
+            type: profileImg.type || 'image/jpeg',
+          } as any);
         }
 
         expertise?.forEach((item, index) => {
@@ -532,10 +530,7 @@ const ProfileSetup = () => {
         identificationList?.forEach(item => {
           if (item.uri && !item.uri.startsWith('http')) {
             payload.append('identity_proofs', {
-              uri:
-                Platform.OS === 'ios' && !item.uri.startsWith('file://')
-                  ? `file://${item.uri}`
-                  : item.uri,
+              uri: normalizeUploadUri(item.uri),
               name: item.name || 'identity_proof.pdf',
               type: item.type || 'application/pdf',
             } as any);
@@ -550,7 +545,11 @@ const ProfileSetup = () => {
           if (item?.image?.uri) {
             const resolved = await resolveCertificateFile(item);
             if (resolved) {
-              payload.append('certificate_documents', resolved as any);
+              payload.append('certificate_documents', {
+                uri: normalizeUploadUri(resolved.uri),
+                name: resolved.name || 'certificate.pdf',
+                type: resolved.type || 'application/pdf',
+              } as any);
               payload.append(
                 'certificate_expiration_date',
                 item?.expire_date || '',
@@ -574,10 +573,7 @@ const ProfileSetup = () => {
         // file part and would error or clear the W9 form on the server.
         if (w99FormData.uri && !w99FormData.uri.startsWith('http')) {
           payload.append('w9Form', {
-            uri:
-              Platform.OS === 'ios' && !w99FormData.uri.startsWith('file://')
-                ? `file://${w99FormData.uri}`
-                : w99FormData.uri,
+            uri: normalizeUploadUri(w99FormData.uri),
             name: w99FormData.name || 'w9_form.pdf',
             type: w99FormData.type || 'application/pdf',
           } as any);
@@ -979,8 +975,6 @@ const ProfileSetup = () => {
                               }
                             },
                           });
-                          // setImageIsVisible(true);
-                          // setImagePickerData({ type: 'doc', index: index });
                         }}
                       >
                         <Image source={Icons.upload} style={styles.backup} />
@@ -1302,11 +1296,6 @@ const ProfileSetup = () => {
                           }
                         },
                       });
-                      // setImageIsVisible(true);
-                      // setImagePickerData({
-                      //   type: 'w9', // explicit single document type
-                      //   index: 3,
-                      // });
                     }}
                   >
                     <Image source={Icons.upload} style={styles.backup} />
@@ -1361,6 +1350,8 @@ const ProfileSetup = () => {
       />
       <CustomImagePicker
         visible={imageIsVisible}
+        isCrop={imagePickerData.type === 'image'}
+        cropperCircleOverlay={imagePickerData.type === 'image'}
         onClose={() => setImageIsVisible(false)}
         onSelect={(img: { uri: string; name: string; type: string }) => {
           if (imagePickerData.type === 'doc') {

@@ -17,12 +17,16 @@ interface CustomImagePickerProps {
   visible: boolean;
   onClose: () => void;
   onSelect?: Function;
+  isCrop?: boolean;
+  cropperCircleOverlay?: boolean;
 }
 
 export default function CustomImagePicker({
   visible = false,
   onClose = () => {},
   onSelect = () => {},
+  isCrop = false,
+  cropperCircleOverlay = false,
 }: CustomImagePickerProps) {
   const translateSheetY = useRef(new Animated.Value(0)).current;
 
@@ -47,8 +51,17 @@ export default function CustomImagePicker({
               style={styles.touchContainer}
               onPress={async () => {
                 await getImageFromCamera({
-                  // isCrop: true,
-                  callback: ({ path, uri }) => onSelect(path, uri),
+                  isCrop,
+                  cropperCircleOverlay,
+                  compressImageMaxWidth: 2000,
+                  compressImageMaxHeight: 2000,
+                  compressImageQuality: 0.8,
+                  callback: ({ path, uri }) => {
+                    if (path || uri) {
+                      onSelect(path, uri);
+                      onClose();
+                    }
+                  },
                 });
               }}
             >
@@ -59,8 +72,17 @@ export default function CustomImagePicker({
               style={styles.touchContainer}
               onPress={async () => {
                 await getImageFromGallery({
-                  isCrop: true,
-                  callback: ({ path, uri }) => onSelect(path, uri),
+                  isCrop,
+                  cropperCircleOverlay,
+                  compressImageMaxWidth: 2000,
+                  compressImageMaxHeight: 2000,
+                  compressImageQuality: 0.8,
+                  callback: ({ path, uri }) => {
+                    if (path || uri) {
+                      onSelect(path, uri);
+                      onClose();
+                    }
+                  },
                 });
               }}
             >

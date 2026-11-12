@@ -4,6 +4,7 @@ import Share from 'react-native-share';
 import moment from 'moment';
 import { pick, DocumentPickerResponse } from '@react-native-documents/picker';
 import { showMessage } from './Toast';
+import { normalizeUploadUri } from './index';
 
 /* =========================================================
    TYPES
@@ -103,14 +104,7 @@ const formatFile = (file: DocumentPickerResponse) => {
   return {
     name: fileName,
     type: getMimeType(fileName) || file.type || 'application/octet-stream',
-    // Keep the file:// scheme on iOS — stripping it breaks React Native's
-    // multipart upload since RCTNetworking requires a valid file:// URI to read the file.
-    uri:
-      Platform.OS === 'android'
-        ? file.uri
-        : file.uri.startsWith('file://')
-        ? file.uri
-        : `file://${file.uri}`,
+    uri: normalizeUploadUri(file.uri),
     extension,
   };
 };
@@ -151,6 +145,11 @@ export const getFileFromLocal = async ({
 
         if (!isValidFile(file)) {
           showMessage('Only images and document files are allowed');
+          return null;
+        }
+
+        if (item.size && item.size > 10 * 1024 * 1024) {
+          showMessage('File exceeds 10MB limit. Please choose a smaller file.');
           return null;
         }
 

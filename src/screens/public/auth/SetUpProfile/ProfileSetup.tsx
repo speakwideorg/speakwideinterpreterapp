@@ -50,6 +50,7 @@ import { useIsFocused } from '@react-navigation/native';
 import PlacesAutocompleteInput from '@app/components/common/PlaceAutocompleteInput';
 import { getFileFromLocal } from '@app/utils/helpers/FileActions';
 import CustomImageFilePicker from '@app/components/common/CustomImageFilePicker';
+import { normalizeUploadUri } from '@app/utils/helpers';
 
 type ProfileSetupProps = {
   street_address: string;
@@ -188,7 +189,11 @@ const ProfileSetup = () => {
     } else {
       const payload = new FormData();
       if (profileImg.uri) {
-        payload.append('profile_image', profileImg as any);
+        payload.append('profile_image', {
+          uri: normalizeUploadUri(profileImg.uri),
+          name: profileImg.name || 'profile.jpg',
+          type: profileImg.type || 'image/jpeg',
+        } as any);
       }
       payload.append('ein', info.ein);
       payload.append('social_security_number', info.ssn);
@@ -206,10 +211,7 @@ const ProfileSetup = () => {
       identificationList?.forEach(item => {
         if (item?.uri) {
           payload.append('identity_proofs', {
-            uri:
-              Platform.OS === 'ios' && !item.uri.startsWith('file://')
-                ? `file://${item.uri}`
-                : item.uri,
+            uri: normalizeUploadUri(item.uri),
             name: item.name || 'identity_proof.pdf',
             type: item.type || 'application/pdf',
           } as any);
@@ -219,10 +221,7 @@ const ProfileSetup = () => {
       certificateList?.forEach(item => {
         if (item?.image?.uri !== '') {
           payload.append('certificate_documents', {
-            uri:
-              Platform.OS === 'ios' && !item.image.uri.startsWith('file://')
-                ? `file://${item.image.uri}`
-                : item.image.uri,
+            uri: normalizeUploadUri(item.image.uri),
             name: item.image.name || 'certificate.pdf',
             type: item.image.type || 'application/pdf',
           } as any);
@@ -240,10 +239,7 @@ const ProfileSetup = () => {
 
       if (w99FormData?.uri) {
         payload.append('w9Form', {
-          uri:
-            Platform.OS === 'ios' && !w99FormData.uri.startsWith('file://')
-              ? `file://${w99FormData.uri}`
-              : w99FormData.uri,
+          uri: normalizeUploadUri(w99FormData.uri),
           name: w99FormData.name || 'w9_form.pdf',
           type: w99FormData.type || 'application/pdf',
         } as any);
@@ -580,9 +576,6 @@ const ProfileSetup = () => {
                               }
                             },
                           });
-
-                          // setImageIsVisible(true);
-                          // setImagePickerData({ type: 'doc', index: index });
                         }}
                       >
                         <Image source={Icons.upload} style={styles.backup} />
@@ -906,11 +899,6 @@ const ProfileSetup = () => {
                           }
                         },
                       });
-                      // setImageIsVisible(true);
-                      // setImagePickerData({
-                      //   type: 'w9', // explicit single document type
-                      //   index: 3,
-                      // });
                     }}
                   >
                     <Image source={Icons.upload} style={styles.backup} />
@@ -959,6 +947,8 @@ const ProfileSetup = () => {
 
       <CustomImagePicker
         visible={profileImageIsVisible}
+        isCrop={true}
+        cropperCircleOverlay={true}
         onClose={() => setProfileImageIsVisible(false)}
         onSelect={(img: { uri: string; name: string; type: string }) => {
           setProfileImg({
@@ -969,52 +959,6 @@ const ProfileSetup = () => {
           setProfileImageIsVisible(false);
         }}
       />
-
-      {/* <CustomImagePicker
-        visible={imageIsVisible}
-        onClose={() => setImageIsVisible(false)}
-        onSelect={(img: { uri: string; name: string; type?: string }) => {
-          if (imagePickerData.type === 'doc') {
-            setCertificateList(prev =>
-              prev.map((item, i) =>
-                i === imagePickerData.index
-                  ? {
-                      ...item,
-                      expire_date: '',
-                      image: {
-                        name: img?.name || '',
-                        type: img?.type || 'image/jpeg',
-                        uri: img?.uri || '',
-                      },
-                    }
-                  : item,
-              ),
-            );
-            setImagePickerData({ index: 0, type: 'doc' });
-          } else if (imagePickerData.type === 'id') {
-            setIdentificationList(prev =>
-              prev.map((item, i) =>
-                i === imagePickerData.index
-                  ? {
-                      name: img?.name || '',
-                      uri: img?.uri || '',
-                      type: img?.type || 'image/jpeg',
-                    }
-                  : item,
-              ),
-            );
-            setImagePickerData({ index: 0, type: 'id' });
-          } else if (imagePickerData.type === 'w9') {
-            setW99FormData({
-              name: img?.name || '',
-              uri: img?.uri || '',
-              type: img?.type || 'image/jpeg',
-            });
-            setImagePickerData({ index: 0, type: 'w9' });
-          }
-          setImageIsVisible(false);
-        }}
-      /> */}
 
       <CustomImageFilePicker
         visible={imageIsVisible}

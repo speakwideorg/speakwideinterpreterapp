@@ -1,5 +1,5 @@
 import { Colors, Fonts, Icons } from '@app/themes';
-import { getImageFromCamera } from '@app/utils/helpers';
+import { getImageFromCamera, getImageFromGallery } from '@app/utils/helpers';
 import { getFileFromLocal } from '@app/utils/helpers/FileActions';
 import { isIos } from '@app/utils/helpers/Validation';
 import { normalize } from '@app/utils/orientation';
@@ -56,21 +56,26 @@ export default function CustomImageFilePicker({
               style={styles.touchContainer}
               onPress={async () => {
                 await getImageFromCamera({
+                  isCrop: false,
+                  compressImageMaxWidth: 2000,
+                  compressImageMaxHeight: 2000,
+                  compressImageQuality: 0.8,
                   callback: ({ path, uri }) => {
-                    const finalUri = uri || path || '';
-                    console.log('uri or path===>', uri, path);
+                    const finalUri = uri || path?.uri || '';
+                    if (!finalUri) return;
 
-                    // extract filename safely
                     const fileName =
-                      uri?.split('/').pop() || `camera_${Date.now()}.jpg`;
+                      path?.name ||
+                      uri?.split('/').pop() ||
+                      `camera_${Date.now()}.jpg`;
 
-                    const file = {
+                    const file: PickedFile = {
                       name: fileName,
                       uri: finalUri,
-                      type: 'image/jpeg',
+                      type: path?.type || 'image/jpeg',
                     };
 
-                    onSelect(path || finalUri, finalUri, file);
+                    onSelect(fileName, finalUri, file);
                     onClose();
                   },
                 });
@@ -80,7 +85,41 @@ export default function CustomImageFilePicker({
               <Text style={styles.touchText}>Camera</Text>
             </TouchableOpacity>
 
-            {/* FILE / GALLERY */}
+            {/* GALLERY */}
+            <TouchableOpacity
+              style={styles.touchContainer}
+              onPress={async () => {
+                await getImageFromGallery({
+                  isCrop: false,
+                  compressImageMaxWidth: 2000,
+                  compressImageMaxHeight: 2000,
+                  compressImageQuality: 0.8,
+                  callback: ({ path, uri }) => {
+                    const finalUri = uri || path?.uri || '';
+                    if (!finalUri) return;
+
+                    const fileName =
+                      path?.name ||
+                      uri?.split('/').pop() ||
+                      `gallery_${Date.now()}.jpg`;
+
+                    const file: PickedFile = {
+                      name: fileName,
+                      uri: finalUri,
+                      type: path?.type || 'image/jpeg',
+                    };
+
+                    onSelect(fileName, finalUri, file);
+                    onClose();
+                  },
+                });
+              }}
+            >
+              <Image source={Icons.icon_galary} style={styles.touchIcon} />
+              <Text style={styles.touchText}>Gallery</Text>
+            </TouchableOpacity>
+
+            {/* FILE / DOCUMENT */}
             <TouchableOpacity
               style={styles.touchContainer}
               onPress={async () => {
@@ -90,10 +129,10 @@ export default function CustomImageFilePicker({
                     const picked = files?.[0]?.path;
                     if (!picked) return;
 
-                    const file = {
+                    const file: PickedFile = {
                       name: picked.name || '',
                       uri: picked.uri || '',
-                      type: picked.type || 'image/jpeg',
+                      type: picked.type || 'application/pdf',
                     };
 
                     onSelect(picked.name || '', picked.uri || '', file);
@@ -102,8 +141,8 @@ export default function CustomImageFilePicker({
                 });
               }}
             >
-              <Image source={Icons.icon_galary} style={styles.touchIcon} />
-              <Text style={styles.touchText}>Gallery</Text>
+              <Image source={Icons.upload} style={styles.touchIcon} />
+              <Text style={styles.touchText}>Document</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -142,25 +181,29 @@ const styles = StyleSheet.create({
   container: {
     justifyContent: 'space-evenly',
     width: '100%',
-    height: normalize(120),
+    height: normalize(110),
     flexDirection: 'row',
-    paddingBottom: normalize(20),
+    paddingBottom: normalize(10),
   },
   touchContainer: {
-    width: '45%',
+    width: '30%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: Colors.magnolia,
     borderRadius: normalize(10),
+    paddingHorizontal: normalize(4),
   },
   touchIcon: {
-    width: 50,
-    height: 50,
+    width: normalize(34),
+    height: normalize(34),
+    resizeMode: 'contain',
     tintColor: Colors.night_blue,
   },
   touchText: {
     fontFamily: Fonts.Inter_Medium,
     color: Colors.night_blue,
     fontSize: normalize(12),
+    marginTop: normalize(6),
   },
 });
