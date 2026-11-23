@@ -78,6 +78,12 @@ type ProfileSetupProps = {
   email: string;
   phone: string;
   street_address: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  lat?: number | null;
+  lng?: number | null;
   ssn: string;
   ein: string;
   about_me: string;
@@ -91,6 +97,12 @@ type ProfileSetupProps = {
 interface ProfileData {
   full_name: string;
   address: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  lat?: number | null;
+  lng?: number | null;
   email: string;
   phone: string;
   profile_image: string;
@@ -144,6 +156,12 @@ const ProfileSetup = () => {
     phone: profileDetails?.phone || '',
     logo: null,
     street_address: profileDetails?.address || '',
+    city: profileDetails?.city || '',
+    state: profileDetails?.state || '',
+    zip: profileDetails?.zip || '',
+    country: profileDetails?.country || 'US',
+    lat: profileDetails?.lat ?? null,
+    lng: profileDetails?.lng ?? null,
     ssn: maskSSN(profileDetails?.social_security_number || profileDetails?.ssn_last4),
     ein: maskEIN(profileDetails?.ein || profileDetails?.ein_last4),
     about_me: profileDetails?.objectives || '',
@@ -331,6 +349,12 @@ const ProfileSetup = () => {
         phone: profileDetails?.phone || '',
         logo: null,
         street_address: profileDetails?.address || '',
+        city: profileDetails?.city || '',
+        state: profileDetails?.state || '',
+        zip: profileDetails?.zip || '',
+        country: profileDetails?.country || 'US',
+        lat: profileDetails?.lat ?? null,
+        lng: profileDetails?.lng ?? null,
         ssn: maskSSN(profileDetails?.social_security_number || profileDetails?.ssn_last4),
         ein: maskEIN(profileDetails?.ein || profileDetails?.ein_last4),
         about_me: profileDetails?.objectives || '',
@@ -507,6 +531,24 @@ const ProfileSetup = () => {
           payload.append('social_security_number', unformatSSN(info.ssn));
         }
         payload.append('address', info.street_address);
+        if (info.city) {
+          payload.append('city', info.city);
+        }
+        if (info.state) {
+          payload.append('state', info.state);
+        }
+        if (info.zip) {
+          payload.append('zip', info.zip);
+        }
+        if (info.country) {
+          payload.append('country', info.country);
+        }
+        if (info.lat !== null && info.lat !== undefined) {
+          payload.append('lat', String(info.lat));
+        }
+        if (info.lng !== null && info.lng !== undefined) {
+          payload.append('lng', String(info.lng));
+        }
 
         // Only send profile_image when the user picked a NEW local file. When the
         // photo is unchanged, profileImg.uri holds the existing S3 URL (http...),
@@ -851,15 +893,48 @@ const ProfileSetup = () => {
           <PlacesAutocompleteInput
             placeholder="Enter address"
             defaultAddress={info.street_address} // Pre-fill with existing value
-            onLocationSelect={async (data: any, details = null) => {
-              console.log('data', data, details);
-              // const place = {
-              //   name: data.description,
-              //   lat: details?.geometry.location.lat,
-              //   lng: details?.geometry.location.lng,
-              // };
+            onLocationSelect={(data: any, details: any = null) => {
+              // 1. Raw formatted address string
+              const rawAddress = data?.description || '';
 
-              updateValue('street_address', data?.description);
+              // 2. Extract structured components from Google Places address_components
+              let city = '';
+              let state = '';
+              let zip = '';
+              let country = 'US';
+
+              if (details?.address_components) {
+                details.address_components.forEach((comp: any) => {
+                  const types = comp.types || [];
+                  if (types.includes('locality')) {
+                    city = comp.long_name;
+                  } else if (!city && types.includes('sublocality_level_1')) {
+                    city = comp.long_name;
+                  } else if (types.includes('administrative_area_level_1')) {
+                    state = comp.short_name; // e.g. "PA", "NY", "CA"
+                  } else if (types.includes('postal_code')) {
+                    zip = comp.long_name;
+                  } else if (types.includes('country')) {
+                    country = comp.short_name; // e.g. "US"
+                  }
+                });
+              }
+
+              // 3. Extract coordinates
+              const lat = details?.geometry?.location?.lat ?? null;
+              const lng = details?.geometry?.location?.lng ?? null;
+
+              // 4. Update component state
+              setInfo((prev: any) => ({
+                ...prev,
+                street_address: rawAddress,
+                city,
+                state,
+                zip,
+                country,
+                lat,
+                lng,
+              }));
             }}
           />
 

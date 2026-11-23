@@ -54,6 +54,12 @@ import { normalizeUploadUri } from '@app/utils/helpers';
 
 type ProfileSetupProps = {
   street_address: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  lat?: number | null;
+  lng?: number | null;
   ssn: string;
   ein: string;
   about_me: string;
@@ -73,6 +79,12 @@ const ProfileSetup = () => {
   );
   const [info, setInfo] = useState<ProfileSetupProps>({
     street_address: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'US',
+    lat: null,
+    lng: null,
     ssn: '',
     ein: '',
     about_me: '',
@@ -198,6 +210,24 @@ const ProfileSetup = () => {
       payload.append('ein', info.ein);
       payload.append('social_security_number', info.ssn);
       payload.append('address', info.street_address);
+      if (info.city) {
+        payload.append('city', info.city);
+      }
+      if (info.state) {
+        payload.append('state', info.state);
+      }
+      if (info.zip) {
+        payload.append('zip', info.zip);
+      }
+      if (info.country) {
+        payload.append('country', info.country);
+      }
+      if (info.lat !== null && info.lat !== undefined) {
+        payload.append('lat', String(info.lat));
+      }
+      if (info.lng !== null && info.lng !== undefined) {
+        payload.append('lng', String(info.lng));
+      }
       payload.append('gender', info.preferred_gender);
       payload.append('objectives', info.about_me);
       expertise?.forEach((item, index) => {
@@ -456,8 +486,48 @@ const ProfileSetup = () => {
             onTyping={(text: string) => {
               updateValue('street_address', text);
             }}
-            onLocationSelect={(data: any, details = null) => {
-              updateValue('street_address', data?.description);
+            onLocationSelect={(data: any, details: any = null) => {
+              // 1. Raw formatted address string
+              const rawAddress = data?.description || '';
+
+              // 2. Extract structured components from Google Places address_components
+              let city = '';
+              let state = '';
+              let zip = '';
+              let country = 'US';
+
+              if (details?.address_components) {
+                details.address_components.forEach((comp: any) => {
+                  const types = comp.types || [];
+                  if (types.includes('locality')) {
+                    city = comp.long_name;
+                  } else if (!city && types.includes('sublocality_level_1')) {
+                    city = comp.long_name;
+                  } else if (types.includes('administrative_area_level_1')) {
+                    state = comp.short_name; // e.g. "PA", "NY", "CA"
+                  } else if (types.includes('postal_code')) {
+                    zip = comp.long_name;
+                  } else if (types.includes('country')) {
+                    country = comp.short_name; // e.g. "US"
+                  }
+                });
+              }
+
+              // 3. Extract coordinates
+              const lat = details?.geometry?.location?.lat ?? null;
+              const lng = details?.geometry?.location?.lng ?? null;
+
+              // 4. Update component state
+              setInfo((prev: any) => ({
+                ...prev,
+                street_address: rawAddress,
+                city,
+                state,
+                zip,
+                country,
+                lat,
+                lng,
+              }));
             }}
           />
 
