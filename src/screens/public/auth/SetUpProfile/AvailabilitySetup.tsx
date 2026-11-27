@@ -227,87 +227,74 @@ const AvailabilitySetup = () => {
     dispatch(setupAvailibilityRequest(payload));
   };
 
+  const handleSkip = () => {
+    // Dispatch setup with empty schedule. Backend saves empty slots and 
+    // automatically marks user.isAvailabilityAdded = true so the interpreter
+    // smoothly progresses to subscription / bank account setup without being re-prompted.
+    dispatch(setupAvailibilityRequest({ weeklySchedule: [] }));
+  };
+
   return (
     <KeyboardAvoidingTemplate
       contentContainerStyle={styles.container}
       loaderEnable={isLoading}
     >
       <View style={styles.main}>
-        <ImageBackground source={Images.background} style={styles.background}>
-          <MyStatusBar
-            backgroundColor={'transparent'}
-            barStyle={'dark-content'}
-            translucent
-          />
-          <View style={styles.v}>
-            <View style={styles.logoRowContainer}>
-              <Image source={Icons.logo} style={styles.logo} />
-              <TouchableOpacity
-                style={styles.exitContainer}
-                onPress={() => {
-                  setIsExit(true);
-                }}
-              >
-                <Image
-                  source={Icons.icon_exit}
-                  style={styles.exit}
-                  tintColor={Colors.purple}
-                />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.title}>
-              Set Up <Text style={styles.titleBold}>Your Availability</Text>
-            </Text>
-            <View style={styles.titleMonthSection}>
-              <Text style={styles.dashboardTitle}>Select Month</Text>
-              <Pressable
-                onPress={handleOpenCalendar}
-                style={styles.monthWithIcon}
-              >
-                <Text style={styles.dateMonthTitle}>
-                  {selectedMonth} {selectedYear}
-                </Text>
-                <Image
-                  source={Icons.arrow_drop_down}
-                  style={styles.arrowDropIcon}
-                />
-              </Pressable>
-            </View>
-          </View>
-          {isExit && (
-            <ExitAppModal
-              visible={isExit}
-              onCancel={() => setIsExit(false)}
-              onConfirm={() => {
-                setIsExit(false);
-                dispatch(logoutRequest({}));
-              }}
-            />
-          )}
-          {/* <View style={styles.headerContainer}>
+        <ImageBackground source={Images.background} style={styles.background} />
+        <MyStatusBar
+          backgroundColor={'transparent'}
+          barStyle={'dark-content'}
+          translucent
+        />
+        <View style={styles.v}>
+          <View style={styles.logoRowContainer}>
             <Image source={Icons.logo} style={styles.logo} />
-            <Text style={styles.title}>
-              Set Up <Text style={styles.titleBold}>Your Availability</Text>
-            </Text>
+            <TouchableOpacity
+              style={styles.exitContainer}
+              onPress={() => {
+                setIsExit(true);
+              }}
+            >
+              <Image
+                source={Icons.icon_exit}
+                style={styles.exit}
+                tintColor={Colors.purple}
+              />
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.titleMonthSection}>
-              <Text style={styles.dashboardTitle}>Calendar</Text>
-              <Pressable
-                onPress={handleOpenCalendar}
-                style={styles.monthWithIcon}
-              >
-                <Text style={styles.dateMonthTitle}>
-                  {selectedMonth} {selectedYear}
-                </Text>
-                <Image
-                  source={Icons.arrow_drop_down}
-                  style={styles.arrowDropIcon}
-                />
-              </Pressable>
-            </View>
-          </View> */}
-        </ImageBackground>
+          <Text style={styles.title}>
+            Preferred <Text style={styles.titleBold}>Working Hours</Text>
+          </Text>
+          <Text style={styles.subtitle}>
+            Set your preferred working hours for coordinator reference. You can still view and accept open sessions outside these hours.
+          </Text>
+          <View style={styles.titleMonthSection}>
+            <Text style={styles.dashboardTitle}>Select Month</Text>
+            <Pressable
+              onPress={handleOpenCalendar}
+              style={styles.monthWithIcon}
+            >
+              <Text style={styles.dateMonthTitle}>
+                {selectedMonth} {selectedYear}
+              </Text>
+              <Image
+                source={Icons.arrow_drop_down}
+                style={styles.arrowDropIcon}
+              />
+            </Pressable>
+          </View>
+        </View>
+        {isExit && (
+          <ExitAppModal
+            visible={isExit}
+            onCancel={() => setIsExit(false)}
+            onConfirm={() => {
+              setIsExit(false);
+              dispatch(logoutRequest({}));
+            }}
+          />
+        )}
         <View style={styles.v1}>
           <Image
             source={Images.backgroundHeader}
@@ -341,11 +328,18 @@ const AvailabilitySetup = () => {
                     title={'Continue'}
                     onPress={() => {
                       handleContinue();
-                      // navigate('AddPaymentCard');
                     }}
                     width={'100%'}
                     marginTop={0}
                   />
+                  <TouchableOpacity
+                    onPress={() => handleSkip()}
+                    style={styles.skipButton}
+                  >
+                    <Text style={styles.skipText}>
+                      Skip for now
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               }
               keyExtractor={(item, index) => `${item.day}-${index}`}
@@ -374,8 +368,16 @@ export default AvailabilitySetup;
 const styles = StyleSheet.create({
   container: { paddingBottom: normalize(45) },
   main: { flex: 1, backgroundColor: Colors.white },
-  background: { width: '100%', height: normalize(300), position: 'absolute' },
-  v: { paddingHorizontal: normalize(15) },
+  background: {
+    width: '100%',
+    height: normalize(320),
+    position: 'absolute',
+    top: 0,
+  },
+  v: {
+    paddingHorizontal: normalize(15),
+    paddingBottom: normalize(20),
+  },
   logoRowContainer: {
     width: '100%',
     flexDirection: 'row',
@@ -408,52 +410,18 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.Manrope_Regular,
     marginTop: normalize(10),
   },
-  v1: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: normalize(15),
-    borderTopRightRadius: normalize(15),
-    marginTop: normalize(235),
-    alignItems: 'center',
-    paddingTop: normalize(5),
+  subtitle: {
+    fontSize: normalize(12),
+    color: Colors.gray,
+    fontFamily: Fonts.Manrope_Regular,
+    marginTop: normalize(6),
+    lineHeight: normalize(16),
   },
-  flexContainer: { flex: 1 },
-  headerContainer: {
-    paddingHorizontal: normalize(15),
-    paddingBottom: normalize(45),
-  },
-
-  // container: { paddingBottom: normalize(30) },
-  // main: { flex: 1, backgroundColor: Colors.white },
-  // background: {
-  //   width: '100%',
-  //   height: normalize(300),
-  //   position: 'absolute',
-  // },
-
-  // logo: {
-  //   height: normalize(35),
-  //   width: normalize(35),
-  //   marginTop: normalize(isIos() ? 10 : 26),
-  //   borderRadius: normalize(40),
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  //   shadowColor: Colors.dark_grey,
-  //   shadowOffset: { width: 0, height: 4 },
-  //   shadowOpacity: 0.2,
-  //   shadowRadius: 10,
-  //   elevation: 4,
-  //   resizeMode: 'cover',
-  // },
-  // title: {
-  //   fontSize: normalize(18),
-  //   color: Colors.night_blue,
-  //   fontFamily: Fonts.Manrope_Regular,
-  //   marginTop: normalize(10),
-  // },
   titleBold: {
     fontFamily: Fonts.Manrope_SemiBold,
   },
-  contentWrapper: {
+  v1: {
+    width: '100%',
     backgroundColor: Colors.white,
     borderTopLeftRadius: normalize(15),
     borderTopRightRadius: normalize(15),
@@ -468,10 +436,11 @@ const styles = StyleSheet.create({
   },
   weeklyHoursButton: {
     position: 'absolute',
-    top: -normalize(22),
+    top: -normalize(18),
     alignSelf: 'center',
   },
   listContainer: {
+    width: '100%',
     paddingHorizontal: normalize(15),
     marginTop: normalize(25),
   },
@@ -485,13 +454,22 @@ const styles = StyleSheet.create({
   footer: {
     width: '100%',
     alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: normalize(50),
+    marginTop: normalize(40),
+    marginBottom: normalize(20),
+  },
+  skipButton: {
+    marginTop: normalize(12),
+    alignItems: 'center',
+    padding: normalize(8),
+  },
+  skipText: {
+    color: Colors.purple,
+    fontFamily: Fonts.Manrope_Regular,
+    fontSize: normalize(14),
   },
   titleMonthSection: {
     flexDirection: 'row',
-    marginTop: normalize(25),
+    marginTop: normalize(20),
     alignItems: 'center',
     width: '100%',
     justifyContent: 'space-between',

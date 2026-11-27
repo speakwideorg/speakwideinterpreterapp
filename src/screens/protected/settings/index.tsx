@@ -103,7 +103,7 @@ const SettingsScreen = () => {
             />
             <RenderCard
               icon={Icons.event_available}
-              label="Update Availability"
+              label="Preferred Working Hours"
               borderBottom
               onPress={() =>
                 navigate('AvailabilitySetup', {

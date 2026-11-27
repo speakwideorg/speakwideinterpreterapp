@@ -268,7 +268,10 @@ const AvailabilitySetup = (props: any) => {
             <Image source={Icons.logo} style={styles.logo} />
           )}
           <Text style={styles.title}>
-            Set Up <Text style={styles.titleBold}>Your Availability</Text>
+            Preferred <Text style={styles.titleBold}>Working Hours</Text>
+          </Text>
+          <Text style={styles.subtitle}>
+            Set your preferred working hours for coordinator reference. You can still view and accept open sessions outside these hours.
           </Text>
 
           <View style={styles.titleMonthSection}>
@@ -381,6 +384,13 @@ const styles = StyleSheet.create({
     color: Colors.night_blue,
     fontFamily: Fonts.Manrope_Regular,
     marginTop: normalize(10),
+  },
+  subtitle: {
+    fontSize: normalize(12),
+    color: Colors.gray,
+    fontFamily: Fonts.Manrope_Regular,
+    marginTop: normalize(6),
+    lineHeight: normalize(16),
   },
   titleBold: {
     fontFamily: Fonts.Manrope_SemiBold,

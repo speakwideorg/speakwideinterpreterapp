@@ -893,6 +893,9 @@ const ProfileSetup = () => {
           <PlacesAutocompleteInput
             placeholder="Enter address"
             defaultAddress={info.street_address} // Pre-fill with existing value
+            onTyping={(text: string) => {
+              updateValue('street_address', text);
+            }}
             onLocationSelect={(data: any, details: any = null) => {
               // 1. Raw formatted address string
               const rawAddress = data?.description || '';

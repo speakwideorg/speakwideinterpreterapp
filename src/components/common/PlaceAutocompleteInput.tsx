@@ -14,7 +14,7 @@ import {
   GooglePlaceDetail,
   GooglePlacesAutocompleteRef,
 } from 'react-native-google-places-autocomplete';
-import { Colors, Icons } from '@app/themes';
+import { Colors, Icons, Fonts } from '@app/themes';
 import { normalize } from '@app/utils/orientation';
 import { GOOGLE_MAPS_API_KEY } from '@env';
 
@@ -37,13 +37,20 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
   onTyping,
 }) => {
   const autocompleteRef = useRef<GooglePlacesAutocompleteRef | null>(null);
+  const lastDefaultAddressRef = useRef<string | undefined>(undefined);
 
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
   const [isLocationSelected, setIsLocationSelected] = useState<boolean>(false);
   const [inputText, setInputText] = useState<string>('');
 
   useEffect(() => {
-    if (defaultAddress && autocompleteRef.current) {
+    if (
+      defaultAddress !== undefined &&
+      defaultAddress !== '' &&
+      defaultAddress !== lastDefaultAddressRef.current &&
+      autocompleteRef.current
+    ) {
+      lastDefaultAddressRef.current = defaultAddress;
       autocompleteRef.current.setAddressText(defaultAddress);
       setInputText(defaultAddress);
       setIsLocationSelected(true);
@@ -52,26 +59,31 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
   }, [defaultAddress]);
 
   const renderLocationRow = (rowData: GooglePlaceData) => {
-    const title = rowData.structured_formatting.main_text;
-    const address = rowData.structured_formatting.secondary_text;
+    const title =
+      rowData.structured_formatting?.main_text || rowData.description || '';
+    const address = rowData.structured_formatting?.secondary_text || '';
 
     return (
-      <View style={styles.locationRowContainer}>
+      <View style={styles.locationRowContainer} pointerEvents="none">
+        <Image source={Icons.location} style={styles.locationPinIcon} />
         <View style={styles.locationTextContainer}>
           <Text style={styles.locationTitle}>{title}</Text>
-          <Text style={styles.locationAddress}>{address}</Text>
+          {address ? (
+            <Text style={styles.locationAddress}>{address}</Text>
+          ) : null}
         </View>
       </View>
     );
   };
 
   const renderClearButton = () => {
-    if (!isLocationSelected || !inputText) return null;
+    if (!inputText) return null;
 
     return (
       <TouchableOpacity
         style={styles.clearButton}
         onPress={() => {
+          lastDefaultAddressRef.current = '';
           autocompleteRef.current?.setAddressText('');
           setInputText('');
           setIsLocationSelected(false);
@@ -91,7 +103,8 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
     <GooglePlacesAutocomplete
       ref={autocompleteRef}
       placeholder={placeholder || 'Enter Address'}
-      enablePoweredByContainer={false}
+      enablePoweredByContainer={true}
+      keyboardShouldPersistTaps="always"
       minLength={2}
       fetchDetails={true}
       debounce={200}
@@ -112,16 +125,17 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
         },
         row: styles.row,
         description: styles.description,
-        container: { width: '90%' },
+        container: { width: '90%', zIndex: 1000 },
       }}
       textInputProps={{
         onChangeText: (text: string) => {
+          lastDefaultAddressRef.current = text;
           setInputText(text);
 
-          //  send typing value to parent
+          // send typing value to parent
           onTyping?.(text);
 
-          if (text.trim().length > 0) {
+          if (text.trim().length >= 2) {
             setShowSuggestions(true);
             setIsLocationSelected(false);
           } else {
@@ -130,15 +144,16 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
           }
         },
         onFocus: () => {
-          if (inputText.trim().length > 0 && !isLocationSelected) {
+          if (inputText.trim().length >= 2) {
             setShowSuggestions(true);
           }
         },
         placeholderTextColor: Colors.gray,
       }}
       onPress={(data: GooglePlaceData, details: GooglePlaceDetail | null) => {
-        const address = data?.description || '';
+        const address = data?.description || details?.formatted_address || '';
 
+        lastDefaultAddressRef.current = address;
         autocompleteRef.current?.setAddressText(address);
         setInputText(address);
 
@@ -175,26 +190,52 @@ const styles = StyleSheet.create({
     marginHorizontal: normalize(2),
     borderRadius: normalize(10),
     backgroundColor: '#fff',
+    marginTop: normalize(5),
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
       },
-      android: { elevation: 4 },
+      android: { elevation: 5 },
     }),
   },
   row: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#EBEBEB',
     paddingVertical: normalize(10),
+    paddingHorizontal: normalize(8),
   },
   description: { color: '#151515' },
-  locationRowContainer: { flexDirection: 'column' },
-  locationTextContainer: { flex: 1 },
-  locationTitle: { fontSize: normalize(12), color: '#151515' },
-  locationAddress: { fontSize: normalize(11), color: '#939393' },
+  locationRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationPinIcon: {
+    width: normalize(15),
+    height: normalize(15),
+    tintColor: '#9E9E9E',
+    marginRight: normalize(8),
+    resizeMode: 'contain',
+  },
+  locationTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+  },
+  locationTitle: {
+    fontSize: normalize(12),
+    fontFamily: Fonts.DMSans_Bold,
+    color: '#151515',
+    marginRight: normalize(5),
+  },
+  locationAddress: {
+    fontSize: normalize(11),
+    fontFamily: Fonts.DMSans_Regular,
+    color: '#8E8E93',
+  },
   clearButton: {
     position: 'absolute',
     top: normalize(15),
